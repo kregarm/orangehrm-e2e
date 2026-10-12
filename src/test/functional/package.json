@@ -2,10 +2,12 @@
   "scripts": {
     "test": "cypress run",
     "open": "cypress open -e runner=interactive",
+    "test:playwright": "playwright test",
     "format": "prettier . --write",
     "lint": "eslint . --ext .js,.ts, --max-warnings=0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "axios": "~1.13.1",
     "cypress": "^13.6.4",
     "eslint": "^8.56.0",

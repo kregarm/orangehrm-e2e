@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Same layout as the Cypress workflow: the dev environment at the
-      # workspace root, OrangeHRM in ./html. bin/run-e2e picks up the
-      # surrounding dev environment and provisions the app the same way.
+      # The dev environment at the workspace root, OrangeHRM in ./html.
+      # bin/run-e2e picks up the surrounding dev environment and provisions
+      # the app in it.
       - name: Checkout Environment
         uses: actions/checkout@v4
         with:

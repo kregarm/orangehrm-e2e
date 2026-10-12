@@ -18,7 +18,7 @@
 const {defineConfig} = require('@playwright/test');
 const {chromiumArgs} = require('./playwright/support/hosts');
 
-// Same default as the Cypress workflow's CYPRESS_BASE_URL. The trailing slash
+// The dev environment's PHP 8.0 host, as used by Cypress. The trailing slash
 // lets specs navigate relative to index.php, e.g. page.goto('auth/login').
 const baseURL = `${(
   process.env.PLAYWRIGHT_BASE_URL || 'http://php80/web/index.php'

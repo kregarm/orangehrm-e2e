@@ -40,7 +40,7 @@ yarn open
 
 ## Run Playwright end to end
 
-Playwright lives in the same workspace and reuses the Cypress fixtures (`cypress/fixtures/user.json`) and the functional-testing plugin. Its environment is provisioned like the Cypress workflow (`.github/workflows/cypress.yml`): `orangehrm-os-dev-environment` with nginx, PHP and MySQL 5.5, the CLI installer with the Jacqueline White admin, and `tools/prepare.php`. The one difference is PHP 8.3 instead of 8.0: the dev environment's PHP 8.0 image is based on Debian bullseye, which is end of life, so it no longer builds. The app is served as `http://php83/web/index.php`.
+Playwright lives in the same workspace and reuses the Cypress fixtures (`cypress/fixtures/user.json`) and the functional-testing plugin. It provisions the same environment the Cypress suite expects: `orangehrm-os-dev-environment` with nginx, PHP and MySQL 5.5, the CLI installer with the Jacqueline White admin, and `tools/prepare.php`. The one difference is PHP 8.3 instead of 8.0: the dev environment's PHP 8.0 image is based on Debian bullseye, which is end of life, so it no longer builds. The app is served as `http://php83/web/index.php`.
 
 Run from the OrangeHRM repository root. Tests run headless by default; add `--headfull` to watch them in a browser window. Other arguments go to `playwright test`:
 

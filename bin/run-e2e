@@ -2,9 +2,8 @@
 #
 # Runs the Playwright E2E suite against a disposable OrangeHRM instance.
 #
-# The environment is provisioned exactly like the Cypress workflow
-# (.github/workflows/cypress.yml): orangehrm-os-dev-environment with nginx,
-# PHP and MySQL 5.5, the CLI installer with the functional-test admin, and
+# The environment is provisioned the same way the Cypress suite expects:
+# orangehrm-os-dev-environment with nginx, PHP and MySQL 5.5, the CLI installer with the functional-test admin, and
 # tools/prepare.php for the functional-testing plugin. The app is served as
 # http://php83/web/index.php; Playwright runs on the host.
 #
@@ -142,7 +141,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 # Copy what a fresh checkout would contain (tracked files plus new, unignored
-# ones), like the Cypress workflow's actions/checkout, including local edits.
+# ones), like a CI checkout, including local edits.
 log "Copying source to $SOURCE_DIR"
 mkdir -p "$SOURCE_DIR"
 (
@@ -194,7 +193,7 @@ php_exec() {
   docker exec "$PROJECT_NAME-php" bash --login -c "$1"
 }
 
-# --- Provision (mirrors .github/workflows/cypress.yml) ----------------------
+# --- Provision ---------------------------------------------------------------
 
 log "Starting nginx, $PHP_SERVICE and $DB_SERVICE ($PROJECT_NAME)"
 compose up --detach --build "$PHP_SERVICE" "$DB_SERVICE" ||

@@ -38,25 +38,35 @@ yarn test
 yarn open
 ```
 
-## How Cypress prepares its app in GitHub Actions
-
-The Cypress workflow checks out the separate `orangehrm-os-dev-environment` repository and this app into its `html` directory. It builds the dev-environment images, starts PHP 8.0 and MySQL 5.5, installs the app and its frontend assets, then runs `tools/prepare.php` to enable the functional-testing plugin and create the database savepoint. Cypress runs on the GitHub runner against that already-installed app; its tasks use the plugin's API to reset, snapshot, and restore database state. Cypress remains unchanged by the Playwright setup.
-
 ## Run Playwright end to end
 
-Playwright uses the same Cypress functional-test workspace and fixtures, but runs independently. It starts a fresh, disposable Docker Compose project with PHP 8.3 and MySQL 5.5, builds and installs a temporary copy of OrangeHRM, enables the functional-testing plugin, then runs the Playwright suite in Chromium. The MySQL container uses amd64 emulation where necessary because MySQL 5.5 does not publish an Apple Silicon image. The normal app checkout and its database are not reset or reconfigured.
+Playwright lives in the same workspace and reuses the Cypress fixtures (`cypress/fixtures/user.json`) and the functional-testing plugin. Its environment is provisioned like the Cypress workflow (`.github/workflows/cypress.yml`): `orangehrm-os-dev-environment` with nginx, PHP and MySQL 5.5, the CLI installer with the Jacqueline White admin, and `tools/prepare.php`. The one difference is PHP 8.3 instead of 8.0: the dev environment's PHP 8.0 image is based on Debian bullseye, which is end of life, so it no longer builds. The app is served as `http://php83/web/index.php`.
 
-Prerequisites:
-
-- Docker Desktop or Docker CLI, and network access on the first run so the launcher can clone `orangehrm-os-dev-environment` if it is not already checked out.
-- Node.js with Corepack available, and Yarn selected by the workspace's `packageManager` field.
-
-Run from the OrangeHRM repository root:
+Run from the OrangeHRM repository root. Tests run headless by default; add `--headfull` to watch them in a browser window. Other arguments go to `playwright test`:
 
 ```bash
 bin/run-e2e
+bin/run-e2e --headfull
+bin/run-e2e playwright/e2e/feature/core/login.spec.js
 ```
 
-The launcher uses an existing dev-environment checkout if it is an ancestor of this repository. Otherwise it clones one into `~/.cache/orangehrm-os-dev-environment` (override with `ORANGEHRM_DEV_ENV_CACHE`) and creates its default `.env`; set `ORANGEHRM_DEV_ENV_DIR` to use a checkout elsewhere. Docker Desktop's standard macOS CLI path is detected when it is not already on `PATH`. HTTP, HTTPS, and MySQL host ports are selected automatically to avoid conflicts with other local services; override them with `E2E_HTTP_PORT`, `E2E_HTTPS_PORT`, and `E2E_MYSQL_PORT`. Test traces, the HTML report, and app logs are saved in `src/test/functional/playwright/test-results`, `src/test/functional/playwright-report`, and `src/test/functional/e2e-logs`.
+Prerequisites: Docker, Node.js with Corepack, git, and network access on the first run.
 
-To run Playwright directly against an already-running app instead, enable the functional-testing plugin with `tools/prepare.php`, install the functional-test dependencies and Chromium, set `PLAYWRIGHT_BASE_URL` (default: `http://php80/web/index.php`), then run `yarn test:playwright` from `src/test/functional`.
+What it does:
+
+- Copies the checkout (tracked files plus new unignored ones, so local edits are included) to a temp dir, so your working tree, `src/config` and dev database are never touched.
+- Starts it as a separate compose project with its own container names and free host ports, so it can run next to your normal dev environment. Everything is removed on exit.
+- Maps `php83` to `127.0.0.1` for Chromium and for Playwright's API requests (`E2E_LOCAL_HOSTS`), so no `/etc/hosts` entry is needed.
+
+The dev environment is taken from an ancestor directory containing `docker-compose.yml` (the documented layout and the CI layout), `ORANGEHRM_DEV_ENV_DIR`, or a clone in `~/.cache/orangehrm-os-dev-environment` (`ORANGEHRM_DEV_ENV_CACHE`). Override ports with `E2E_HTTP_PORT`, `E2E_HTTPS_PORT` and `E2E_MYSQL_PORT`, and the PHP version with `E2E_PHP_VERSION` (default `8.3`; e.g. `8.4` serves the app as `php84`). Traces, screenshots and videos of failed tests, the HTML report and the app logs end up in `playwright/test-results`, `playwright-report` and `e2e-logs`.
+
+### Writing Playwright specs
+
+Specs live in `playwright/e2e/`, mirroring `cypress/e2e/integration/`. Import `test` and `expect` from `playwright/support/fixtures.js`, which adds:
+
+- `db` — the Cypress `db:*` tasks: `db.reset()`, `db.truncate(tables)`, `db.snapshot(name)`, `db.restore(name)`, `db.clearSnapshots(names)`. Worker-scoped, so it works in `test.beforeAll`.
+- `users` — `cypress/fixtures/user.json`.
+
+As with Cypress' `before:run`, savepoints are cleared once before the run (`playwright/global-setup.js`). Navigate relative to `index.php`: `page.goto('auth/login')`.
+
+To run against an app that is already installed and prepared, set `PLAYWRIGHT_BASE_URL` (default `http://php80/web/index.php`) and run `yarn test:playwright` from this directory.

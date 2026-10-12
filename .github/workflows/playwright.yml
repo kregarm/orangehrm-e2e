@@ -1,12 +1,15 @@
 name: Playwright
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   playwright:
     runs-on: ubuntu-latest
 
     steps:
+      # Same layout as the Cypress workflow: the dev environment at the
+      # workspace root, OrangeHRM in ./html. bin/run-e2e picks up the
+      # surrounding dev environment and provisions the app the same way.
       - name: Checkout Environment
         uses: actions/checkout@v4
         with:
@@ -17,26 +20,20 @@ jobs:
         with:
           path: html
 
-      - name: Configure Docker Environment
-        run: |
-          cp .env.dist .env
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-          cache-dependency-path: html/src/test/functional/yarn.lock
 
-      - name: Enable Yarn
+      - name: Enable Corepack
         run: corepack enable
 
-      - name: Run Playwright
+      - name: Run tests
         run: html/bin/run-e2e
         env:
           PLAYWRIGHT_INSTALL_DEPS: "true"
 
-      - name: Upload Playwright artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:

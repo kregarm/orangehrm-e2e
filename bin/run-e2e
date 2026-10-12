@@ -1,42 +1,82 @@
 #!/usr/bin/env bash
+#
+# Runs the Playwright E2E suite against a disposable OrangeHRM instance.
+#
+# The environment is provisioned exactly like the Cypress workflow
+# (.github/workflows/cypress.yml): orangehrm-os-dev-environment with nginx,
+# PHP and MySQL 5.5, the CLI installer with the functional-test admin, and
+# tools/prepare.php for the functional-testing plugin. The app is served as
+# http://php83/web/index.php; Playwright runs on the host.
+#
+# PHP defaults to 8.3 rather than Cypress' 8.0: the dev environment's PHP 8.0
+# image is based on Debian bullseye, which is EOL, so it no longer builds.
+#
+# To keep the working tree and any running dev environment untouched, the
+# source is copied to a temp dir and started as a separate compose project on
+# free ports. Everything is torn down on exit.
+#
+# Usage: bin/run-e2e [--headfull] [playwright test args...]
+#   --headfull  show the browser window (default: headless)
+#   e.g. bin/run-e2e --headfull playwright/e2e/feature/core/login.spec.js
+#
+# Environment:
+#   ORANGEHRM_DEV_ENV_DIR    existing orangehrm-os-dev-environment checkout
+#   ORANGEHRM_DEV_ENV_CACHE  where to clone it otherwise
+#                            (default: ~/.cache/orangehrm-os-dev-environment)
+#   E2E_HTTP_PORT, E2E_HTTPS_PORT, E2E_MYSQL_PORT
+#                            host ports (default: any free port)
+#   E2E_PHP_VERSION          dev-environment PHP service (default: 8.3),
+#                            e.g. 8.4 -> php-8.4 served as php84
+#   PLAYWRIGHT_INSTALL_DEPS  "true" to also install Chromium's OS packages (CI)
 
 set -Eeuo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FUNCTIONAL_DIR="$PROJECT_ROOT/src/test/functional"
-E2E_HTTP_PORT="${E2E_HTTP_PORT:-}"
-E2E_HTTPS_PORT="${E2E_HTTPS_PORT:-}"
-E2E_MYSQL_PORT="${E2E_MYSQL_PORT:-}"
+DB_SERVICE=mysql55
 PROJECT_NAME="orangehrm-e2e-$(date +%s)-$$"
-DOCKER_CONFIG_PATH="${DOCKER_CONFIG:-$HOME/.docker}"
 RUN_ROOT=""
-OVERRIDE_FILE=""
-PHP_CONTAINER=""
+DOCKER_CONFIG_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
 }
 
-if ! command -v docker >/dev/null 2>&1; then
-  if [[ -x "$HOME/.docker/bin/docker" ]]; then
-    export PATH="$HOME/.docker/bin:$PATH"
-  else
-    fail "Docker CLI not found. Install Docker Desktop or add Docker to PATH."
-  fi
-fi
+log() {
+  printf '\n==> %s\n' "$*"
+}
 
-for command in corepack node rsync curl git; do
-  command -v "$command" >/dev/null 2>&1 || fail "Required command not found: $command"
+# Translate our flags; everything else is passed to `playwright test`.
+PLAYWRIGHT_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --headfull) PLAYWRIGHT_ARGS+=(--headed) ;;
+    *) PLAYWRIGHT_ARGS+=("$arg") ;;
+  esac
 done
 
-if [[ ! -f "$FUNCTIONAL_DIR/yarn.lock" ]]; then
-  fail "Functional-test workspace lockfile is missing: $FUNCTIONAL_DIR/yarn.lock"
+E2E_PHP_VERSION="${E2E_PHP_VERSION:-8.3}"
+[[ "$E2E_PHP_VERSION" =~ ^[0-9]+\.[0-9]+$ ]] || fail "Invalid E2E_PHP_VERSION: $E2E_PHP_VERSION"
+PHP_SERVICE="php-$E2E_PHP_VERSION"
+APP_HOST="php${E2E_PHP_VERSION/./}"
+
+# --- Prerequisites ----------------------------------------------------------
+
+if ! command -v docker >/dev/null 2>&1 && [[ -x "$HOME/.docker/bin/docker" ]]; then
+  export PATH="$HOME/.docker/bin:$PATH"
 fi
+for cmd in docker node corepack curl git tar; do
+  command -v "$cmd" >/dev/null 2>&1 || fail "Required command not found: $cmd"
+done
+docker info >/dev/null 2>&1 || fail "Docker daemon is not reachable. Is Docker running?"
+
+# --- Dev environment checkout -----------------------------------------------
 
 DEV_ENV_DIR="${ORANGEHRM_DEV_ENV_DIR:-}"
 if [[ -z "$DEV_ENV_DIR" ]]; then
-  candidate="$PROJECT_ROOT"
+  # The documented layout checks OrangeHRM out inside the dev environment.
+  candidate="$(dirname "$PROJECT_ROOT")"
   while [[ "$candidate" != "/" ]]; do
     if [[ -f "$candidate/docker-compose.yml" ]]; then
       DEV_ENV_DIR="$candidate"
@@ -45,201 +85,170 @@ if [[ -z "$DEV_ENV_DIR" ]]; then
     candidate="$(dirname "$candidate")"
   done
 fi
-
 if [[ -z "$DEV_ENV_DIR" ]]; then
   DEV_ENV_DIR="${ORANGEHRM_DEV_ENV_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/orangehrm-os-dev-environment}"
   if [[ ! -f "$DEV_ENV_DIR/docker-compose.yml" ]]; then
+    log "Cloning orangehrm-os-dev-environment into $DEV_ENV_DIR"
     mkdir -p "$(dirname "$DEV_ENV_DIR")"
-    printf 'Downloading orangehrm-os-dev-environment to %s...\n' "$DEV_ENV_DIR"
-    git clone --depth 1 \
-      https://github.com/orangehrm/orangehrm-os-dev-environment.git \
-      "$DEV_ENV_DIR"
+    git clone --depth 1 https://github.com/orangehrm/orangehrm-os-dev-environment.git "$DEV_ENV_DIR"
   fi
 fi
-[[ -f "$DEV_ENV_DIR/docker-compose.yml" ]] || fail \
-  "No docker-compose.yml found in ORANGEHRM_DEV_ENV_DIR=$DEV_ENV_DIR"
-if [[ ! -f "$DEV_ENV_DIR/.env" ]]; then
-  [[ -f "$DEV_ENV_DIR/.env.dist" ]] || fail \
-    "Neither .env nor .env.dist exists in $DEV_ENV_DIR"
-  cp "$DEV_ENV_DIR/.env.dist" "$DEV_ENV_DIR/.env"
-fi
+[[ -f "$DEV_ENV_DIR/docker-compose.yml" ]] || fail "No docker-compose.yml in $DEV_ENV_DIR"
+[[ -f "$DEV_ENV_DIR/.env.dist" ]] || fail "No .env.dist in $DEV_ENV_DIR"
 
-select_port() {
+# --- Ports ------------------------------------------------------------------
+
+free_port() {
   node -e '
-    const net = require("node:net");
-    const preferred = Number(process.argv[1]);
-    const server = net.createServer();
-    server.once("error", (error) => {
-      if (error.code !== "EADDRINUSE") {
-        console.error(error.message);
-        process.exit(1);
-      }
-      server.listen(0, "127.0.0.1");
-    });
-    server.listen(preferred, "127.0.0.1", () => {
+    const server = require("node:net").createServer();
+    server.listen(0, "127.0.0.1", () => {
       console.log(server.address().port);
       server.close();
     });
-  ' "$1"
+  '
 }
 
-if [[ -z "$E2E_HTTP_PORT" ]]; then
-  E2E_HTTP_PORT="$(select_port 0)"
-fi
-if [[ -z "$E2E_HTTPS_PORT" ]]; then
-  E2E_HTTPS_PORT="$(select_port 0)"
-fi
-
-for port in "$E2E_HTTP_PORT" "$E2E_HTTPS_PORT"; do
-  if [[ ! "$port" =~ ^[0-9]+$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
-    fail "E2E_HTTP_PORT and E2E_HTTPS_PORT must be ports between 1 and 65535."
-  fi
+E2E_HTTP_PORT="${E2E_HTTP_PORT:-$(free_port)}"
+E2E_HTTPS_PORT="${E2E_HTTPS_PORT:-$(free_port)}"
+E2E_MYSQL_PORT="${E2E_MYSQL_PORT:-$(free_port)}"
+for port in "$E2E_HTTP_PORT" "$E2E_HTTPS_PORT" "$E2E_MYSQL_PORT"; do
+  [[ "$port" =~ ^[0-9]+$ ]] && ((port >= 1 && port <= 65535)) ||
+    fail "Invalid port: $port"
 done
 
-if [[ -z "$E2E_MYSQL_PORT" ]]; then
-  E2E_MYSQL_PORT="$(select_port 0)"
-fi
-
-if [[ ! "$E2E_MYSQL_PORT" =~ ^[0-9]+$ ]] || ((10#$E2E_MYSQL_PORT < 1 || 10#$E2E_MYSQL_PORT > 65535)); then
-  fail "E2E_MYSQL_PORT must be a port between 1 and 65535."
-fi
-
-(
-  cd "$FUNCTIONAL_DIR"
-  corepack yarn install --immutable
-  if [[ "${PLAYWRIGHT_INSTALL_DEPS:-false}" == "true" ]]; then
-    corepack yarn playwright install --with-deps chromium
-  else
-    corepack yarn playwright install chromium
-  fi
-)
+# --- Isolated source copy and compose project -------------------------------
 
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/orangehrm-e2e.XXXXXX")"
-E2E_SOURCE_DIR="$RUN_ROOT/html"
-mkdir -p "$E2E_SOURCE_DIR"
-touch "$RUN_ROOT/.bash_history"
-rsync -a \
-  --exclude='.git/' \
-  --exclude='**/node_modules/' \
-  --exclude='src/vendor/' \
-  --exclude='src/config/' \
-  --exclude='src/cache/' \
-  --exclude='src/log/' \
-  --exclude='web/dist/' \
-  --exclude='src/test/functional/cypress/videos/' \
-  --exclude='src/test/functional/cypress/screenshots/' \
-  --exclude='src/test/functional/playwright/test-results/' \
-  --exclude='src/test/functional/playwright-report/' \
-  "$PROJECT_ROOT/" "$E2E_SOURCE_DIR/"
-
-mkdir -p "$E2E_SOURCE_DIR/src/log" "$E2E_SOURCE_DIR/src/config"
-cat > "$E2E_SOURCE_DIR/src/config/log_settings.php" <<'PHP'
-<?php
-
-$logFilePath = realpath(__DIR__ . '/../log') . DIRECTORY_SEPARATOR . 'orangehrm.log';
-
-ini_set('log_errors', true);
-ini_set('error_log', $logFilePath);
-PHP
-
-OVERRIDE_FILE="$RUN_ROOT/compose.override.yml"
-cat > "$OVERRIDE_FILE" <<'EOF'
-services:
-  nginx:
-    container_name: ${E2E_PROJECT_NAME}-nginx
-  php-8.3:
-    container_name: ${E2E_PROJECT_NAME}-php
-  mysql55:
-    container_name: ${E2E_PROJECT_NAME}-mysql
-    platform: linux/amd64
-EOF
-
-compose() {
-  (
-    cd "$DEV_ENV_DIR"
-    HOME="$RUN_ROOT" \
-      DOCKER_CONFIG="$DOCKER_CONFIG_PATH" \
-      E2E_PROJECT_NAME="$PROJECT_NAME" \
-    LOCAL_SRC="$E2E_SOURCE_DIR" \
-      MYSQL_ROOT_PW=root \
-      MYSQL_55_PORT="$E2E_MYSQL_PORT" \
-      NGINX_PORT="$E2E_HTTP_PORT" \
-      NGINX_SSL_PORT="$E2E_HTTPS_PORT" \
-      docker compose \
-      --file docker-compose.yml \
-      --file "$OVERRIDE_FILE" \
-      --project-name "$PROJECT_NAME" \
-      "$@"
-  )
-}
+SOURCE_DIR="$RUN_ROOT/html"
 
 cleanup() {
-  status=$?
+  local status=$?
   trap - EXIT
   set +e
-
-  cleanup_status=0
-  if [[ -n "$RUN_ROOT" ]]; then
-    compose down --volumes --remove-orphans || cleanup_status=$?
-    if [[ -d "$RUN_ROOT/html/src/log" ]]; then
-      mkdir -p "$FUNCTIONAL_DIR/e2e-logs"
-      rsync -a "$RUN_ROOT/html/src/log/" "$FUNCTIONAL_DIR/e2e-logs/" || cleanup_status=$?
-    fi
-    rm -rf "$RUN_ROOT"
+  log "Tearing down $PROJECT_NAME"
+  # On Linux, files the containers created in the bind mount are root-owned;
+  # hand them back so the copy and logs can be removed and read.
+  docker exec "$PROJECT_NAME-php" chown -R "$(id -u):$(id -g)" /var/www >/dev/null 2>&1
+  compose down --volumes --remove-orphans >/dev/null 2>&1
+  if [[ -d "$SOURCE_DIR/src/log" ]]; then
+    rm -rf "$FUNCTIONAL_DIR/e2e-logs"
+    cp -R "$SOURCE_DIR/src/log" "$FUNCTIONAL_DIR/e2e-logs"
   fi
-
-  if [[ "$status" -eq 0 && "$cleanup_status" -ne 0 ]]; then
-    status="$cleanup_status"
-  fi
+  rm -rf "$RUN_ROOT"
   exit "$status"
 }
-
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-printf 'Starting isolated OrangeHRM E2E environment (%s)...\n' "$PROJECT_NAME"
-compose up --detach --build php-8.3 mysql55
-PHP_CONTAINER="$(compose ps --quiet php-8.3)"
-[[ -n "$PHP_CONTAINER" ]] || fail "Could not find the started PHP 8.3 container."
+# Copy what a fresh checkout would contain (tracked files plus new, unignored
+# ones), like the Cypress workflow's actions/checkout, including local edits.
+log "Copying source to $SOURCE_DIR"
+mkdir -p "$SOURCE_DIR"
+(
+  cd "$PROJECT_ROOT"
+  git ls-files -z --cached --others --exclude-standard |
+    while IFS= read -r -d '' file; do
+      # Skip tracked files deleted in the working tree.
+      if [[ -e "$file" || -L "$file" ]]; then printf '%s\0' "$file"; fi
+    done |
+    tar --null -T - -cf -
+) | tar -xf - -C "$SOURCE_DIR"
+mkdir -p "$SOURCE_DIR/src/log" "$SOURCE_DIR/src/config"
 
-docker exec "$PHP_CONTAINER" bash -lc '
-  cd /var/www
-  composer install -d src
-  cd src/client
-  yarn install --immutable
-  yarn build --mode development
-'
+# The dev-environment pins container names (os_dev_*), so give this project
+# its own to run alongside an existing dev environment. MySQL 5.5 has no arm64
+# image; pin amd64 so it runs under emulation on Apple Silicon.
+cp "$DEV_ENV_DIR/.env.dist" "$RUN_ROOT/.env"
+cat >"$RUN_ROOT/compose.override.yml" <<EOF
+services:
+  nginx:
+    container_name: $PROJECT_NAME-nginx
+  $PHP_SERVICE:
+    container_name: $PROJECT_NAME-php
+  $DB_SERVICE:
+    container_name: $PROJECT_NAME-db
+    platform: linux/amd64
+EOF
+touch "$RUN_ROOT/.bash_history"
 
-docker exec "$PHP_CONTAINER" bash -lc '
-  cd /var/www
-  sed -i "s|hostName: 127.0.0.1|hostName: mysql55|" installer/cli_install_config.yaml
-  sed -i "s|adminPassword: Ohrm@1423|adminPassword: Jacqueline@OHRM123|" installer/cli_install_config.yaml
-  sed -i "s|adminEmployeeFirstName: OrangeHRM|adminEmployeeFirstName: Jacqueline|" installer/cli_install_config.yaml
-  sed -i "s|adminEmployeeLastName: Admin|adminEmployeeLastName: White|" installer/cli_install_config.yaml
-  sed -i "s|public const PRODUCT_MODE = self::MODE_PROD|public const PRODUCT_MODE = self::MODE_DEV|" src/lib/config/Config.php
+compose() {
+  # HOME is redirected because the PHP service bind-mounts $HOME/.bash_history;
+  # DOCKER_CONFIG keeps the docker CLI using the real config.
+  HOME="$RUN_ROOT" \
+    DOCKER_CONFIG="$DOCKER_CONFIG_DIR" \
+    LOCAL_SRC="$SOURCE_DIR" \
+    NGINX_PORT="$E2E_HTTP_PORT" \
+    NGINX_SSL_PORT="$E2E_HTTPS_PORT" \
+    MYSQL_55_PORT="$E2E_MYSQL_PORT" \
+    docker compose \
+    --project-directory "$DEV_ENV_DIR" \
+    --env-file "$RUN_ROOT/.env" \
+    --file "$DEV_ENV_DIR/docker-compose.yml" \
+    --file "$RUN_ROOT/compose.override.yml" \
+    --project-name "$PROJECT_NAME" \
+    "$@"
+}
+
+php_exec() {
+  docker exec "$PROJECT_NAME-php" bash --login -c "$1"
+}
+
+# --- Provision (mirrors .github/workflows/cypress.yml) ----------------------
+
+log "Starting nginx, $PHP_SERVICE and $DB_SERVICE ($PROJECT_NAME)"
+compose up --detach --build "$PHP_SERVICE" "$DB_SERVICE" ||
+  fail "Could not build or start $PHP_SERVICE/$DB_SERVICE (see the docker output above). Some older dev-environment PHP images no longer build; try another E2E_PHP_VERSION."
+
+log "Installing dependencies and building the frontend"
+php_exec 'cd src && composer install --no-interaction'
+php_exec 'cd src/client && yarn install --immutable && yarn build --mode development'
+
+log "Waiting for $DB_SERVICE"
+for _ in {1..60}; do
+  docker exec "$PROJECT_NAME-db" mysqladmin ping -uroot -proot --silent >/dev/null 2>&1 && break
+  sleep 2
+done
+docker exec "$PROJECT_NAME-db" mysqladmin ping -uroot -proot --silent >/dev/null 2>&1 ||
+  fail "$DB_SERVICE did not become ready"
+
+log "Installing OrangeHRM"
+php_exec "
+  set -e
+  sed -i 's/hostName: 127.0.0.1/hostName: $DB_SERVICE/g' installer/cli_install_config.yaml
+  sed -i 's/adminPassword: Ohrm@1423/adminPassword: Jacqueline@OHRM123/g' installer/cli_install_config.yaml
+  sed -i 's/adminEmployeeFirstName: OrangeHRM/adminEmployeeFirstName: Jacqueline/g' installer/cli_install_config.yaml
+  sed -i 's/adminEmployeeLastName: Admin/adminEmployeeLastName: White/g' installer/cli_install_config.yaml
+  sed -i 's/public const PRODUCT_MODE = self::MODE_PROD/public const PRODUCT_MODE = self::MODE_DEV/g' src/lib/config/Config.php
   chmod -R 777 src/log src/config
   php installer/cli_install.php
   php src/test/functional/tools/prepare.php
-'
+"
 
-export PLAYWRIGHT_HOST=php83
-export PLAYWRIGHT_BASE_URL="http://php83:${E2E_HTTP_PORT}/web/index.php"
-export PLAYWRIGHT_API_BASE_URL="http://127.0.0.1:${E2E_HTTP_PORT}/web/index.php"
-printf 'Waiting for OrangeHRM at %s...\n' "$PLAYWRIGHT_BASE_URL"
-ready=false
-for attempt in {1..60}; do
-  if curl --fail --silent \
-    --resolve "php83:${E2E_HTTP_PORT}:127.0.0.1" \
-    "$PLAYWRIGHT_BASE_URL/auth/login" >/dev/null; then
-    ready=true
-    break
-  fi
+# --- Run Playwright ---------------------------------------------------------
+
+export PLAYWRIGHT_BASE_URL="http://$APP_HOST:$E2E_HTTP_PORT/web/index.php"
+# Resolve the app host to the published nginx port without touching /etc/hosts.
+export E2E_LOCAL_HOSTS="$APP_HOST"
+
+log "Waiting for $PLAYWRIGHT_BASE_URL"
+for _ in {1..60}; do
+  curl --fail --silent --output /dev/null \
+    --resolve "$APP_HOST:$E2E_HTTP_PORT:127.0.0.1" \
+    "$PLAYWRIGHT_BASE_URL/auth/login" && break
   sleep 2
 done
-[[ "$ready" == true ]] || fail "OrangeHRM did not become ready at $PLAYWRIGHT_BASE_URL"
+curl --fail --silent --output /dev/null \
+  --resolve "$APP_HOST:$E2E_HTTP_PORT:127.0.0.1" \
+  "$PLAYWRIGHT_BASE_URL/auth/login" ||
+  fail "OrangeHRM did not become ready at $PLAYWRIGHT_BASE_URL"
 
-(
-  cd "$FUNCTIONAL_DIR"
-  corepack yarn test:playwright
-)
+log "Running Playwright"
+cd "$FUNCTIONAL_DIR"
+corepack yarn install --immutable
+if [[ "${PLAYWRIGHT_INSTALL_DEPS:-false}" == "true" ]]; then
+  corepack yarn playwright install --with-deps chromium
+else
+  corepack yarn playwright install chromium
+fi
+corepack yarn test:playwright ${PLAYWRIGHT_ARGS[@]+"${PLAYWRIGHT_ARGS[@]}"}

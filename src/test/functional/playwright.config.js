@@ -16,27 +16,34 @@
  */
 
 const {defineConfig} = require('@playwright/test');
+const {chromiumArgs} = require('./playwright/support/hosts');
 
-const appHost = process.env.PLAYWRIGHT_HOST || 'php80';
+// Same default as the Cypress workflow's CYPRESS_BASE_URL. The trailing slash
+// lets specs navigate relative to index.php, e.g. page.goto('auth/login').
+const baseURL = `${(
+  process.env.PLAYWRIGHT_BASE_URL || 'http://php80/web/index.php'
+).replace(/\/+$/, '')}/`;
 
 module.exports = defineConfig({
-  testDir: './playwright',
+  testDir: './playwright/e2e',
+  outputDir: './playwright/test-results',
+  globalSetup: require.resolve('./playwright/global-setup'),
+  // Specs share one database, so run them serially like Cypress does.
   fullyParallel: false,
   workers: 1,
+  forbidOnly: !!process.env.CI,
   reporter: [
     ['list'],
     ['html', {outputFolder: 'playwright-report', open: 'never'}],
   ],
+  expect: {timeout: 10000},
   use: {
-    baseURL:
-      process.env.PLAYWRIGHT_BASE_URL || `http://${appHost}/web/index.php`,
+    baseURL,
     browserName: 'chromium',
     headless: true,
-    launchOptions: {
-      args: [`--host-resolver-rules=MAP ${appHost} 127.0.0.1`],
-    },
+    launchOptions: {args: chromiumArgs},
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
-  outputDir: 'playwright/test-results',
 });

@@ -76,4 +76,20 @@ export class EmployeesApiClass extends BaseApiClass {
     );
     return data;
   }
+
+  /**
+   * Make `supervisorEmpNumber` a supervisor of `empNumber` (PIM > Report-to).
+   * A supervisor with a login gains the Supervisor role, e.g. approving the
+   * subordinate's leave. Reporting methods: 1 Direct, 2 Indirect.
+   */
+  async addSupervisor(
+    empNumber: number,
+    supervisorEmpNumber: number,
+    reportingMethodId = 1,
+  ): Promise<void> {
+    await this.post(`${EmployeesApiClass.path}/${empNumber}/supervisors`, {
+      empNumber: supervisorEmpNumber,
+      reportingMethodId,
+    });
+  }
 }

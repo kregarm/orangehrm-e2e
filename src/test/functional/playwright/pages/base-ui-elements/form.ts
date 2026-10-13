@@ -26,6 +26,19 @@ export class Form {
     return new SelectField(this.group(label), this.page);
   }
 
+  /**
+   * A field without a label of its own, by its input's placeholder, e.g. the
+   * First/Middle/Last Name inputs grouped under one "Full Name" label. The
+   * innermost group is used, as the label's group contains the others.
+   */
+  placeholder(placeholder: string) {
+    return new TextField(
+      this.root.locator('.oxd-input-group:not(:has(.oxd-input-group))', {
+        has: this.page.getByPlaceholder(placeholder, {exact: true}),
+      }),
+    );
+  }
+
   autocomplete(label: string) {
     return new AutocompleteField(this.group(label), this.page);
   }

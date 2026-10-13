@@ -1,0 +1,159 @@
+/**
+ * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
+ * all the essential functionalities required for any enterprise.
+ * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
+ *
+ * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU General Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with OrangeHRM.
+ * If not, see <https://www.gnu.org/licenses/>.
+ */
+import {test, expect} from '../../../support/fixtures';
+import {ApplyLeavePage} from '../../../pages/apply-leave-page';
+import {
+  LeaveListPage,
+  MyLeaveListPage,
+  leaveDates,
+} from '../../../pages/leave-list-page';
+import {upcomingWorkingDay, workingDay} from '../../../data/leave';
+import type {LeavePeriod} from '../../../api/leave/LeavePeriodsApiClass';
+import type {LeaveType} from '../../../api/leave/LeaveTypesApiClass';
+
+/**
+ * John (ESS) has 10 days of Annual Leave per period and reports to Mike, who
+ * thereby gets the Supervisor role and handles John's requests. Each test
+ * uses its own week so the requests don't overlap.
+ */
+test.describe('Leave - Leave requests', () => {
+  test.use({loginAs: 'john'});
+
+  let period: LeavePeriod;
+  let annual: LeaveType;
+
+  test.beforeAll(async ({db, api, users}) => {
+    await db.reset();
+    const periods = await api.leavePeriods.define();
+    period = periods[0];
+    annual = await api.leaveTypes.create({name: 'Annual Leave'});
+
+    const john = await api.users.ensure(users.john);
+    const mike = await api.users.ensure(users.mike);
+    await api.employees.addSupervisor(
+      john.employee.empNumber,
+      mike.employee.empNumber,
+    );
+    // The next period's too, as upcoming leave may fall into it
+    for (const {startDate, endDate} of periods) {
+      await api.leaveEntitlements.add({
+        empNumber: john.employee.empNumber,
+        leaveTypeId: annual.id,
+        fromDate: startDate,
+        toDate: endDate,
+        entitlement: 10,
+      });
+    }
+  });
+
+  test('employee applies for leave and it is pending approval', async ({
+    page,
+    api,
+    users,
+  }) => {
+    const {leaveRequests} = api;
+    const balance = () =>
+      leaveRequests.asUser('john', () => leaveRequests.balance(annual.id));
+    const before = await balance();
+    const from = workingDay(period, 1, 0);
+    const to = workingDay(period, 1, 1);
+
+    const applyLeavePage = new ApplyLeavePage(page);
+    await applyLeavePage.goto();
+    await applyLeavePage.leaveType.choose(annual.name);
+    await expect(applyLeavePage.balance).toHaveText(
+      `${before.balance.toFixed(2)} Day(s)`,
+    );
+    await applyLeavePage.dates(from, to);
+    await applyLeavePage.comments.fill('Family trip');
+    await applyLeavePage.apply();
+
+    expect(await balance()).toMatchObject({
+      balance: before.balance - 2,
+      pending: before.pending + 2,
+    });
+
+    const myLeaveListPage = new MyLeaveListPage(page);
+    await myLeaveListPage.goto();
+    const row = myLeaveListPage.row(users.john.fullName, leaveDates(from, to));
+    await expect(myLeaveListPage.status(row)).toHaveText(
+      'Pending Approval (2.00)',
+    );
+  });
+
+  test('supervisor approves leave and it is scheduled', async ({
+    page,
+    pageAs,
+    api,
+    users,
+  }) => {
+    const {leaveRequests} = api;
+    // Approved leave is Scheduled until its date has passed, then Taken
+    const date = upcomingWorkingDay(2);
+    await leaveRequests.asUser('john', () =>
+      leaveRequests.apply({leaveTypeId: annual.id, fromDate: date}),
+    );
+
+    const leaveListPage = new LeaveListPage(await pageAs('mike'));
+    await leaveListPage.goto();
+    const pending = leaveListPage.row(users.john.fullName, leaveDates(date));
+    await expect(leaveListPage.status(pending)).toHaveText(
+      'Pending Approval (1.00)',
+    );
+    await leaveListPage.act(pending, 'Approve');
+    // The list only shows pending requests
+    await expect(pending).toHaveCount(0);
+
+    const myLeaveListPage = new MyLeaveListPage(page);
+    await myLeaveListPage.goto();
+    const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
+    await expect(myLeaveListPage.status(row)).toHaveText('Scheduled (1.00)');
+  });
+
+  test('supervisor rejects leave and the days return to the balance', async ({
+    page,
+    pageAs,
+    api,
+    users,
+  }) => {
+    const {leaveRequests} = api;
+    const balance = () =>
+      leaveRequests.asUser('john', () => leaveRequests.balance(annual.id));
+    const before = await balance();
+    const date = workingDay(period, 3);
+    await leaveRequests.asUser('john', () =>
+      leaveRequests.apply({leaveTypeId: annual.id, fromDate: date}),
+    );
+    expect((await balance()).balance).toBe(before.balance - 1);
+
+    const leaveListPage = new LeaveListPage(await pageAs('mike'));
+    await leaveListPage.goto();
+    const pending = leaveListPage.row(users.john.fullName, leaveDates(date));
+    await leaveListPage.act(pending, 'Reject');
+    await expect(pending).toHaveCount(0);
+
+    expect(await balance()).toMatchObject({
+      balance: before.balance,
+      pending: before.pending,
+    });
+
+    const myLeaveListPage = new MyLeaveListPage(page);
+    await myLeaveListPage.goto();
+    const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
+    await expect(myLeaveListPage.status(row)).toHaveText('Rejected (1.00)');
+  });
+});

@@ -134,11 +134,16 @@ export class ApiSession {
   /**
    * Cookies of `user`'s session, to skip the UI login in a browser context:
    * `browser.newContext({storageState: await api.session.storageState('admin')})`
+   *
+   * Always logs in afresh: a cached session may already be dead without any
+   * request having noticed, e.g. when the user was recreated by a db.reset()
+   * (the server expires sessions of users modified since they logged in). A
+   * browser page would then land on the login page instead of retrying.
    */
   async storageState(user: UserRef) {
-    const {username} = resolveCredentials(user);
-    await this.asUser(user, async () => undefined);
-    return this.contexts.get(username)!.storageState();
+    const credentials = resolveCredentials(user);
+    await this.authenticate(credentials);
+    return this.contexts.get(credentials.username)!.storageState();
   }
 
   /** Dispose all sessions; the next request is anonymous until loginAs */
@@ -192,6 +197,10 @@ export class ApiSession {
       context = await this.apiRequest.newContext({
         baseURL: this.baseURL,
         extraHTTPHeaders: {Accept: 'application/json'},
+        // Inside a test, new contexts default to the test's storageState,
+        // i.e. the `loginAs` user's cookies; logging in another user on
+        // them would switch that user's session (and browser page) over.
+        storageState: {cookies: [], origins: []},
       });
       this.contexts.set(key, context);
     }

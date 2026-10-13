@@ -1,22 +1,35 @@
+/**
+ * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
+ * all the essential functionalities required for any enterprise.
+ * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
+ *
+ * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU General Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with OrangeHRM.
+ * If not, see <https://www.gnu.org/licenses/>.
+ */
 import type {Page} from '@playwright/test';
 import {test, expect} from '../../../support/fixtures';
+import {LoginPage} from '../../../pages/login-page';
 import type {User} from '../../../data/users';
-
-const inputGroup = (page: Page, label: string) =>
-  page.locator('.oxd-input-group').filter({hasText: label});
 
 /** Log in through the form and assert the redirect to the dashboard */
 const login = async (page: Page, user: User) => {
-  await page.goto('auth/login');
-  await inputGroup(page, 'Username').locator('input').fill(user.username);
-  await inputGroup(page, 'Password').locator('input').fill(user.password);
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
 
   const loginResponse = page.waitForResponse(
     (response) =>
       response.request().method() === 'POST' &&
       response.url().endsWith('/auth/validate'),
   );
-  await page.getByRole('button', {name: 'Login'}).click();
+  await loginPage.login(user);
 
   expect((await loginResponse).headers().location).toMatch(/dashboard\/index/);
   await expect(page).toHaveURL(/dashboard\/index/);
@@ -41,15 +54,26 @@ test.describe('Core - Login Page', () => {
     await expect(
       menu.getByRole('link', {name: 'Admin', exact: true}),
     ).toHaveCount(0);
-
-    await page.pause();
   });
 
   test('login form validations should work', async ({page}) => {
-    await page.goto('auth/login');
-    await page.getByRole('button', {name: 'Login'}).click();
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.loginButton.click();
 
-    await expect(inputGroup(page, 'Username')).toContainText('Required');
-    await expect(inputGroup(page, 'Password')).toContainText('Required');
+    await expect(loginPage.username.root).toContainText('Required');
+    await expect(loginPage.password.root).toContainText('Required');
+  });
+
+  test('wrong password is rejected', async ({page, users}) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login({
+      username: users.admin.username,
+      password: 'Wrong@OHRM123',
+    });
+
+    await expect(page.getByRole('alert')).toContainText('Invalid credentials');
+    await expect(page).toHaveURL(/auth\/login/);
   });
 });

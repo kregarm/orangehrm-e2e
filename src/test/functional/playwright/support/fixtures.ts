@@ -15,7 +15,12 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {test as base, expect, type Page} from '@playwright/test';
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+} from '@playwright/test';
 import {createDb, type Db} from './db';
 import {ApiSession} from '../api/BaseApiClass';
 import {CandidatesApiClass} from '../api/recruitment/CandidatesApiClass';
@@ -23,6 +28,10 @@ import {VacanciesApiClass} from '../api/recruitment/VacanciesApiClass';
 import {EmployeesApiClass} from '../api/pim/EmployeesApiClass';
 import {JobTitlesApiClass} from '../api/admin/JobTitlesApiClass';
 import {UsersApiClass} from '../api/admin/UsersApiClass';
+import {LeavePeriodsApiClass} from '../api/leave/LeavePeriodsApiClass';
+import {LeaveTypesApiClass} from '../api/leave/LeaveTypesApiClass';
+import {LeaveEntitlementsApiClass} from '../api/leave/LeaveEntitlementsApiClass';
+import {LeaveRequestsApiClass} from '../api/leave/LeaveRequestsApiClass';
 import {users, type UserKey} from '../data/users';
 
 /**
@@ -40,6 +49,9 @@ import {users, type UserKey} from '../data/users';
  *           (logged out), so the login page itself stays testable.
  * - `guestPage` a page in its own logged-out browser context, for public
  *           pages (e.g. the job board) next to a logged-in `page`.
+ * - `pageAs` opens a page in its own browser context logged in as the given
+ *           user, for flows between users (e.g. an employee applies for
+ *           leave, their supervisor approves it). The user must exist.
  */
 type Api = {
   session: ApiSession;
@@ -48,10 +60,18 @@ type Api = {
   employees: EmployeesApiClass;
   jobTitles: JobTitlesApiClass;
   users: UsersApiClass;
+  leavePeriods: LeavePeriodsApiClass;
+  leaveTypes: LeaveTypesApiClass;
+  leaveEntitlements: LeaveEntitlementsApiClass;
+  leaveRequests: LeaveRequestsApiClass;
 };
 
 export const test = base.extend<
-  {loginAs: UserKey | null; guestPage: Page},
+  {
+    loginAs: UserKey | null;
+    guestPage: Page;
+    pageAs: (user: UserKey) => Promise<Page>;
+  },
   {db: Db; users: typeof users; api: Api}
 >({
   loginAs: [null, {option: true}],
@@ -63,8 +83,25 @@ export const test = base.extend<
     await use(await context.newPage());
     await context.close();
   },
-  storageState: async ({loginAs, api, storageState}, use) => {
-    await use(loginAs ? await api.session.storageState(loginAs) : storageState);
+  pageAs: async ({browser, api}, use) => {
+    const contexts: BrowserContext[] = [];
+    await use(async (user) => {
+      const context = await browser.newContext({
+        storageState: await api.session.storageState(user),
+      });
+      contexts.push(context);
+      return context.newPage();
+    });
+    await Promise.all(contexts.map((context) => context.close()));
+  },
+  // Not done by overriding `storageState`: that is also resolved for hooks,
+  // so it would log in before a beforeAll has created (or reset) the user.
+  context: async ({context, loginAs, api}, use) => {
+    if (loginAs) {
+      const {cookies} = await api.session.storageState(loginAs);
+      await context.addCookies(cookies);
+    }
+    await use(context);
   },
   users: [users, {scope: 'worker'}],
   db: [
@@ -91,6 +128,10 @@ export const test = base.extend<
         employees: new EmployeesApiClass(session),
         jobTitles: new JobTitlesApiClass(session),
         users: new UsersApiClass(session),
+        leavePeriods: new LeavePeriodsApiClass(session),
+        leaveTypes: new LeaveTypesApiClass(session),
+        leaveEntitlements: new LeaveEntitlementsApiClass(session),
+        leaveRequests: new LeaveRequestsApiClass(session),
       });
       await session.logout();
     },

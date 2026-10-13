@@ -50,6 +50,14 @@ bin/run-e2e --headfull
 bin/run-e2e playwright/e2e/feature/core/login.spec.ts
 ```
 
+Provisioning takes several minutes. Locally, add `--reuse` to keep the instance running afterwards: later `--reuse` runs go straight to Playwright as long as the app is unchanged. Only edits outside `src/test/functional/` (except `tools/`), including uncommitted ones, or a different PHP version or dev environment revision trigger a rebuild. The specs reset the database themselves. The kept instance lives in `~/.cache/orangehrm-e2e` (`E2E_STATE_DIR`):
+
+```bash
+bin/run-e2e --reuse --headfull playwright/e2e/feature/core/login.spec.ts
+bin/run-e2e --rebuild   # provision the kept instance again anyway
+bin/run-e2e --down      # remove it
+```
+
 Prerequisites: Docker, Node.js with Corepack, git, and network access on the first run.
 
 What it does:

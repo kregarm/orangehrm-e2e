@@ -15,15 +15,14 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-require('./support/hosts');
-const {request} = require('@playwright/test');
-const {createDb} = require('./support/db');
+import './support/hosts';
+import {request, type FullConfig} from '@playwright/test';
+import {createDb} from './support/db';
 
 /**
  * Clear savepoints left over from earlier runs, like Cypress' `before:run`.
- * @param {import('@playwright/test').FullConfig} config
  */
-module.exports = async (config) => {
+export default async (config: FullConfig) => {
   const context = await request.newContext({
     baseURL: config.projects[0].use.baseURL,
   });

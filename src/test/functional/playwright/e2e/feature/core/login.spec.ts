@@ -15,9 +15,10 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-const {test, expect} = require('../../../support/fixtures');
+import type {Page} from '@playwright/test';
+import {test, expect} from '../../../support/fixtures';
 
-const inputGroup = (page, label) =>
+const inputGroup = (page: Page, label: string) =>
   page.locator('.oxd-input-group').filter({hasText: label});
 
 test.describe('Core - Login Page', () => {

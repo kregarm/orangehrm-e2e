@@ -15,9 +15,9 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-const base = require('@playwright/test');
-const {createDb} = require('./db');
-const users = require('../../cypress/fixtures/user.json');
+import {test as base, expect} from '@playwright/test';
+import {createDb, type Db} from './db';
+import users from '../../cypress/fixtures/user.json';
 
 /**
  * Specs import {test, expect} from here instead of @playwright/test.
@@ -26,7 +26,7 @@ const users = require('../../cypress/fixtures/user.json');
  *           beforeAll like Cypress' `before(() => cy.task('db:reset'))`
  * - `users` the shared Cypress user fixture (cypress/fixtures/user.json)
  */
-const test = base.test.extend({
+export const test = base.extend<object, {db: Db; users: typeof users}>({
   users: [users, {scope: 'worker'}],
   db: [
     async ({playwright}, use, workerInfo) => {
@@ -40,4 +40,4 @@ const test = base.test.extend({
   ],
 });
 
-module.exports = {test, expect: base.expect};
+export {expect};

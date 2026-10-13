@@ -16,7 +16,7 @@
 #
 # Usage: bin/run-e2e [--headfull] [playwright test args...]
 #   --headfull  show the browser window (default: headless)
-#   e.g. bin/run-e2e --headfull playwright/e2e/feature/core/login.spec.js
+#   e.g. bin/run-e2e --headfull playwright/e2e/feature/core/login.spec.ts
 #
 # Environment:
 #   ORANGEHRM_DEV_ENV_DIR    existing orangehrm-os-dev-environment checkout

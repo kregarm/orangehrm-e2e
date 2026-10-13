@@ -15,16 +15,18 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
+import type {APIRequestContext} from '@playwright/test';
+
 /**
  * Playwright counterpart of the Cypress `db:*` tasks in cypress.config.js,
  * backed by the same functional-testing plugin API
  * (tools/plugins/orangehrmFunctionalTestingPlugin).
  *
- * @param {import('@playwright/test').APIRequestContext} request
- *   context whose baseURL is the app's index.php URL with a trailing slash
+ * @param request context whose baseURL is the app's index.php URL with a
+ *   trailing slash
  */
-const createDb = (request) => {
-  const post = async (path, data) => {
+export const createDb = (request: APIRequestContext) => {
+  const post = async (path: string, data?: Record<string, unknown>) => {
     const response = await request.post(`functional-testing/${path}`, {data});
     if (!response.ok()) {
       throw new Error(
@@ -38,17 +40,17 @@ const createDb = (request) => {
     /** Reset the DB back to fresh install state (cy.task('db:reset')) */
     reset: () => post('database/reset'),
     /** Truncate the given tables (cy.task('db:truncate', {tables})) */
-    truncate: (tables) => post('truncate-table', {tables}),
+    truncate: (tables: string[]) => post('truncate-table', {tables}),
     /** Create a savepoint of DB data (cy.task('db:snapshot', {name})) */
-    snapshot: (name) =>
+    snapshot: (name: string) =>
       post('database/create-savepoint', {savepointName: name}),
     /** Restore the DB to a savepoint (cy.task('db:restore', {name})) */
-    restore: (name) =>
+    restore: (name: string) =>
       post('database/restore-to-savepoint', {savepointName: name}),
     /** Delete the given savepoints, or all when omitted (cy.task('db:clearSnapshots', {names})) */
-    clearSnapshots: (names) =>
+    clearSnapshots: (names?: string[]) =>
       post('database/delete-savepoints', {savepointNames: names ?? []}),
   };
 };
 
-module.exports = {createDb};
+export type Db = ReturnType<typeof createDb>;

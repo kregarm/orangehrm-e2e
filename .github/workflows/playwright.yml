@@ -32,6 +32,9 @@ jobs:
         run: html/bin/run-e2e
         env:
           PLAYWRIGHT_INSTALL_DEPS: "true"
+          # The functional workspace also depends on cypress; skip downloading
+          # its binary, which Playwright doesn't need.
+          CYPRESS_INSTALL_BINARY: "0"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

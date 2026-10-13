@@ -15,8 +15,8 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-const {defineConfig} = require('@playwright/test');
-const {chromiumArgs} = require('./playwright/support/hosts');
+import {defineConfig} from '@playwright/test';
+import {chromiumArgs} from './playwright/support/hosts';
 
 // The dev environment's PHP 8.0 host, as used by Cypress. The trailing slash
 // lets specs navigate relative to index.php, e.g. page.goto('auth/login').
@@ -24,7 +24,7 @@ const baseURL = `${(
   process.env.PLAYWRIGHT_BASE_URL || 'http://php80/web/index.php'
 ).replace(/\/+$/, '')}/`;
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './playwright/e2e',
   outputDir: './playwright/test-results',
   globalSetup: require.resolve('./playwright/global-setup'),

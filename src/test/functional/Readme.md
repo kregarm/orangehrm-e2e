@@ -47,7 +47,7 @@ Run from the OrangeHRM repository root. Tests run headless by default; add `--he
 ```bash
 bin/run-e2e
 bin/run-e2e --headfull
-bin/run-e2e playwright/e2e/feature/core/login.spec.js
+bin/run-e2e playwright/e2e/feature/core/login.spec.ts
 ```
 
 Prerequisites: Docker, Node.js with Corepack, git, and network access on the first run.
@@ -62,11 +62,11 @@ The dev environment is taken from an ancestor directory containing `docker-compo
 
 ### Writing Playwright specs
 
-Specs live in `playwright/e2e/`, mirroring `cypress/e2e/integration/`. Import `test` and `expect` from `playwright/support/fixtures.js`, which adds:
+Specs live in `playwright/e2e/`, mirroring `cypress/e2e/integration/`. Import `test` and `expect` from `playwright/support/fixtures.ts`, which adds:
 
 - `db` — the Cypress `db:*` tasks: `db.reset()`, `db.truncate(tables)`, `db.snapshot(name)`, `db.restore(name)`, `db.clearSnapshots(names)`. Worker-scoped, so it works in `test.beforeAll`.
 - `users` — `cypress/fixtures/user.json`.
 
-As with Cypress' `before:run`, savepoints are cleared once before the run (`playwright/global-setup.js`). Navigate relative to `index.php`: `page.goto('auth/login')`.
+As with Cypress' `before:run`, savepoints are cleared once before the run (`playwright/global-setup.ts`). Navigate relative to `index.php`: `page.goto('auth/login')`.
 
 To run against an app that is already installed and prepared, set `PLAYWRIGHT_BASE_URL` (default `http://php80/web/index.php`) and run `yarn test:playwright` from this directory.

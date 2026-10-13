@@ -4,6 +4,9 @@ node_modules
 
 *.log
 cypress/screenshots
+playwright/test-results
+playwright-report
+e2e-logs
 cypress/fixtures/admin.json
 cypress.config.js
 

@@ -1,0 +1,60 @@
+name: Playwright
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, labeled ]
+
+jobs:
+  playwright:
+    # Opt-in: only PRs carrying the run-e2e label. On a "labeled" event, react
+    # only to run-e2e itself so adding unrelated labels doesn't re-run the suite.
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')
+    runs-on: ubuntu-latest
+
+    steps:
+      # The dev environment at the workspace root, OrangeHRM in ./html.
+      # bin/run-e2e picks up the surrounding dev environment and provisions
+      # the app in it.
+      - name: Checkout Environment
+        uses: actions/checkout@v4
+        with:
+          repository: orangehrm/orangehrm-os-dev-environment
+
+      - name: Checkout OrangeHRM
+        uses: actions/checkout@v4
+        with:
+          path: html
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Run tests
+        run: html/bin/run-e2e
+        env:
+          PLAYWRIGHT_INSTALL_DEPS: "true"
+          # The functional workspace also depends on cypress; skip downloading
+          # its binary, which Playwright doesn't need.
+          CYPRESS_INSTALL_BINARY: "0"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: playwright-${{ github.sha }}
+          path: |
+            html/src/test/functional/playwright/test-results
+            html/src/test/functional/playwright-report
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: playwright-logs-${{ github.sha }}
+          path: html/src/test/functional/e2e-logs

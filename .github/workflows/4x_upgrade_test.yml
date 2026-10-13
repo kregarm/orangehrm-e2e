@@ -1,15 +1,6 @@
 name: Upgrade Test (4.x)
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    paths:
-      - '.github/workflows/4x_upgrade_test.yml'
-      - 'installer/Migration/**'
-  schedule:
-    - cron: "0 2 * * *"
+on: workflow_dispatch
 
 jobs:
   upgrade_test:

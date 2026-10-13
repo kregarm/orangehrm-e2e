@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# shellcheck source-path=SCRIPTDIR/..
+#
+# Runs the Playwright E2E suite against a disposable OrangeHRM instance.
+#
+# The environment is provisioned the same way the Cypress suite expects:
+# orangehrm-os-dev-environment with nginx, PHP and MySQL 5.5, the CLI installer with the functional-test admin, and
+# tools/prepare.php for the functional-testing plugin. The app is served as
+# http://php83/web/index.php; Playwright runs on the host.
+#
+# PHP defaults to 8.3 rather than Cypress' 8.0: the dev environment's PHP 8.0
+# image is based on Debian bullseye, which is EOL, so it no longer builds.
+#
+# To keep the working tree and any running dev environment untouched, the
+# source is copied to a temp dir and started as a separate compose project on
+# free ports. Everything is torn down on exit.
+#
+# With --reuse the instance is kept running afterwards instead, and later
+# --reuse runs skip provisioning while the app is unchanged: the specs under
+# src/test/functional run on the host and the DB is reset by the specs
+# themselves, so only changes to the rest of the checkout (including uncommitted
+# ones), the PHP version or the dev environment trigger a rebuild.
+#
+# Usage: bin/run-e2e [--headfull] [--reuse | --rebuild | --down] [playwright test args...]
+#   --headfull  show the browser window (default: headless)
+#   --reuse     keep the instance and reuse it while the app is unchanged
+#   --rebuild   like --reuse, but provision it again even if unchanged
+#   --down      tear the kept instance down and exit
+#   e.g. bin/run-e2e --headfull playwright/e2e/feature/core/login.spec.ts
+#
+# Environment:
+#   ORANGEHRM_DEV_ENV_DIR    existing orangehrm-os-dev-environment checkout
+#   ORANGEHRM_DEV_ENV_CACHE  where to clone it otherwise
+#                            (default: ~/.cache/orangehrm-os-dev-environment)
+#   E2E_HTTP_PORT, E2E_HTTPS_PORT, E2E_MYSQL_PORT
+#                            host ports (default: any free port); a kept
+#                            instance keeps the ports it was provisioned with
+#   E2E_STATE_DIR            where the kept instance lives
+#                            (default: ~/.cache/orangehrm-e2e)
+#   E2E_PHP_VERSION          dev-environment PHP service (default: 8.3),
+#                            e.g. 8.4 -> php-8.4 served as php84
+#   PLAYWRIGHT_INSTALL_DEPS  "true" to also install Chromium's OS packages (CI)
+#   E2E_SLOW_MO              ms to pause after every browser action (default: 0),
+#                            e.g. E2E_SLOW_MO=500 bin/run-e2e --headfull ...
+
+#
+# The steps live in bin/lib/e2e/: host.sh (prerequisites, dev environment),
+# instance.sh (the Docker instance) and playwright.sh (running the suite).
+
+set -Eeuo pipefail
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FUNCTIONAL_DIR="$PROJECT_ROOT/src/test/functional"
+DB_SERVICE=mysql55
+DOCKER_CONFIG_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
+
+E2E_LIB="$PROJECT_ROOT/bin/lib/e2e"
+# shellcheck source=bin/lib/e2e/common.sh
+source "$E2E_LIB/common.sh"
+# shellcheck source=bin/lib/e2e/host.sh
+source "$E2E_LIB/host.sh"
+# shellcheck source=bin/lib/e2e/instance.sh
+source "$E2E_LIB/instance.sh"
+# shellcheck source=bin/lib/e2e/playwright.sh
+source "$E2E_LIB/playwright.sh"
+
+# Translate our flags; everything else is passed to `playwright test`.
+PLAYWRIGHT_ARGS=()
+REUSE=false
+REBUILD=false
+DOWN=false
+for arg in "$@"; do
+  case "$arg" in
+    --headfull) PLAYWRIGHT_ARGS+=(--headed) ;;
+    --reuse) REUSE=true ;;
+    --rebuild) REUSE=true REBUILD=true ;;
+    --down) DOWN=true ;;
+    *) PLAYWRIGHT_ARGS+=("$arg") ;;
+  esac
+done
+
+E2E_PHP_VERSION="${E2E_PHP_VERSION:-8.3}"
+[[ "$E2E_PHP_VERSION" =~ ^[0-9]+\.[0-9]+$ ]] || fail "Invalid E2E_PHP_VERSION: $E2E_PHP_VERSION"
+PHP_SERVICE="php-$E2E_PHP_VERSION"
+APP_HOST="php${E2E_PHP_VERSION/./}"
+
+require_host_tools
+find_dev_env
+
+if [[ "$DOWN" == true ]]; then
+  init_instance keep
+  log "Tearing down $PROJECT_NAME"
+  teardown_instance
+  rm -rf "$RUN_ROOT"
+  exit 0
+fi
+
+if [[ "$REUSE" == true ]]; then
+  init_instance keep
+else
+  init_instance temp
+fi
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  set +e
+  if [[ "$REUSE" != true ]]; then
+    log "Tearing down $PROJECT_NAME"
+    teardown_instance
+  fi
+  save_logs "$FUNCTIONAL_DIR/e2e-logs"
+  [[ "$REUSE" == true ]] || rm -rf "$RUN_ROOT"
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [[ "$REUSE" != true ]]; then
+  choose_ports
+  provision_instance
+else
+  fingerprint="$(app_fingerprint)"
+  if [[ "$REBUILD" != true ]] && instance_is_current "$fingerprint"; then
+    log "App unchanged; reusing $PROJECT_NAME"
+    start_instance
+  else
+    log "Provisioning $PROJECT_NAME again"
+    teardown_instance
+    forget_instance
+    choose_ports
+    provision_instance
+    mark_instance_current "$fingerprint"
+  fi
+fi
+
+run_playwright ${PLAYWRIGHT_ARGS[@]+"${PLAYWRIGHT_ARGS[@]}"}

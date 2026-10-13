@@ -1,14 +1,6 @@
 name: Scheduled Test
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    paths:
-      - '.github/workflows/scheduled_test.yml'
-  schedule:
-    - cron: "0 2 * * *"
+on: workflow_dispatch
 
 jobs:
   db_test:

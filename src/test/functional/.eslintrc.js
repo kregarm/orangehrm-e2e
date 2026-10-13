@@ -1,4 +1,5 @@
 module.exports = {
+  ignorePatterns: ['playwright-report/**', 'playwright/test-results/**'],
   env: {
     node: true,
   },
@@ -33,4 +34,12 @@ module.exports = {
     'jest/no-identical-title': 'error',
     'jest/prefer-to-have-length': 'warn',
   },
+  overrides: [
+    {
+      files: ['*.ts'],
+      parser: '@typescript-eslint/parser',
+      plugins: ['@typescript-eslint'],
+      extends: ['plugin:@typescript-eslint/recommended'],
+    },
+  ],
 };

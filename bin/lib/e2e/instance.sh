@@ -42,7 +42,7 @@ checkout_files() {
 # plus the PHP version and the dev environment revision.
 app_fingerprint() {
   (
-    cd "$PROJECT_ROOT"
+    cd "$PROJECT_ROOT" || exit
     files="$(checkout_files | tr '\0' '\n' |
       awk '!/^src\/test\/functional\// || /^src\/test\/functional\/tools\//')"
     printf 'php %s\n' "$E2E_PHP_VERSION"
@@ -92,8 +92,9 @@ choose_ports() {
   E2E_MYSQL_PORT="${E2E_MYSQL_PORT:-$(free_port)}"
   local port
   for port in "$E2E_HTTP_PORT" "$E2E_HTTPS_PORT" "$E2E_MYSQL_PORT"; do
-    [[ "$port" =~ ^[0-9]+$ ]] && ((port >= 1 && port <= 65535)) ||
+    if [[ ! "$port" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then
       fail "Invalid port: $port"
+    fi
   done
 }
 

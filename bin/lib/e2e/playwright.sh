@@ -21,7 +21,7 @@ run_playwright() {
   wait_until app_is_up || fail "OrangeHRM did not become ready at $PLAYWRIGHT_BASE_URL"
 
   log "Running Playwright"
-  cd "$FUNCTIONAL_DIR"
+  cd "$FUNCTIONAL_DIR" || fail "Missing $FUNCTIONAL_DIR"
   corepack yarn install --immutable
   if [[ "${PLAYWRIGHT_INSTALL_DEPS:-false}" == "true" ]]; then
     corepack yarn playwright install --with-deps chromium

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck source-path=SCRIPTDIR/..
 #
 # Runs the Playwright E2E suite against a disposable OrangeHRM instance.
 #
@@ -54,13 +55,13 @@ DB_SERVICE=mysql55
 DOCKER_CONFIG_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
 
 E2E_LIB="$PROJECT_ROOT/bin/lib/e2e"
-# shellcheck source=lib/e2e/common.sh
+# shellcheck source=bin/lib/e2e/common.sh
 source "$E2E_LIB/common.sh"
-# shellcheck source=lib/e2e/host.sh
+# shellcheck source=bin/lib/e2e/host.sh
 source "$E2E_LIB/host.sh"
-# shellcheck source=lib/e2e/instance.sh
+# shellcheck source=bin/lib/e2e/instance.sh
 source "$E2E_LIB/instance.sh"
-# shellcheck source=lib/e2e/playwright.sh
+# shellcheck source=bin/lib/e2e/playwright.sh
 source "$E2E_LIB/playwright.sh"
 
 # Translate our flags; everything else is passed to `playwright test`.

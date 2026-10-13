@@ -17,16 +17,33 @@
 
 import {test as base, expect} from '@playwright/test';
 import {createDb, type Db} from './db';
-import users from '../../cypress/fixtures/user.json';
+import {ApiSession} from '../api/BaseApiClass';
+import {CandidatesApiClass} from '../api/recruitment/CandidatesApiClass';
+import {EmployeesApiClass} from '../api/pim/EmployeesApiClass';
+import {UsersApiClass} from '../api/admin/UsersApiClass';
+import {users} from '../data/users';
 
 /**
  * Specs import {test, expect} from here instead of @playwright/test.
  *
  * - `db`    worker-scoped functional-testing DB helpers, usable in
  *           beforeAll like Cypress' `before(() => cy.task('db:reset'))`
- * - `users` the shared Cypress user fixture (cypress/fixtures/user.json)
+ * - `users` the known test users (data/users)
+ * - `api`   worker-scoped REST clients for test setup, logged in as admin.
+ *           They share one session, so `api.session.loginAs('john')` (or
+ *           `api.candidates.asUser('john', () => ...)`) switches all of them.
  */
-export const test = base.extend<object, {db: Db; users: typeof users}>({
+type Api = {
+  session: ApiSession;
+  candidates: CandidatesApiClass;
+  employees: EmployeesApiClass;
+  users: UsersApiClass;
+};
+
+export const test = base.extend<
+  object,
+  {db: Db; users: typeof users; api: Api}
+>({
   users: [users, {scope: 'worker'}],
   db: [
     async ({playwright}, use, workerInfo) => {
@@ -35,6 +52,23 @@ export const test = base.extend<object, {db: Db; users: typeof users}>({
       });
       await use(createDb(request));
       await request.dispose();
+    },
+    {scope: 'worker'},
+  ],
+  api: [
+    async ({playwright}, use, workerInfo) => {
+      const session = new ApiSession(
+        playwright.request,
+        workerInfo.project.use.baseURL!,
+      );
+      await session.loginAs('admin');
+      await use({
+        session,
+        candidates: new CandidatesApiClass(session),
+        employees: new EmployeesApiClass(session),
+        users: new UsersApiClass(session),
+      });
+      await session.logout();
     },
     {scope: 'worker'},
   ],

@@ -1,9 +1,16 @@
 name: Playwright
 
-on: [ push, pull_request ]
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, labeled ]
 
 jobs:
   playwright:
+    # Opt-in: only PRs carrying the run-e2e label. On a "labeled" event, react
+    # only to run-e2e itself so adding unrelated labels doesn't re-run the suite.
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')
     runs-on: ubuntu-latest
 
     steps:

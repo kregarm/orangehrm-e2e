@@ -41,7 +41,12 @@ export default defineConfig({
     baseURL,
     browserName: 'chromium',
     headless: true,
-    launchOptions: {args: chromiumArgs},
+    // E2E_SLOW_MO=500 pauses 500ms after every browser action, to follow a
+    // --headed run by eye. Off by default.
+    launchOptions: {
+      args: chromiumArgs,
+      slowMo: Number(process.env.E2E_SLOW_MO) || 0,
+    },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'retain-on-failure',

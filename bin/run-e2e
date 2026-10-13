@@ -27,6 +27,8 @@
 #   E2E_PHP_VERSION          dev-environment PHP service (default: 8.3),
 #                            e.g. 8.4 -> php-8.4 served as php84
 #   PLAYWRIGHT_INSTALL_DEPS  "true" to also install Chromium's OS packages (CI)
+#   E2E_SLOW_MO              ms to pause after every browser action (default: 0),
+#                            e.g. E2E_SLOW_MO=500 bin/run-e2e --headfull ...
 
 set -Eeuo pipefail
 

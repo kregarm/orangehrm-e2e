@@ -19,17 +19,11 @@ import {RecruitmentPage} from '../../../pages/recruitment-page';
 import {candidates, fullName} from '../../../data/candidates';
 
 test.describe('Recruitment - Candidates', () => {
+  test.use({loginAs: 'admin'});
+
   test.beforeAll(async ({db, api}) => {
     await db.reset();
     await api.candidates.create(candidates.jane);
-  });
-
-  test.beforeEach(async ({page, users}) => {
-    await page.goto('auth/login');
-    await page.getByPlaceholder('Username').fill(users.admin.username);
-    await page.getByPlaceholder('Password').fill(users.admin.password);
-    await page.getByRole('button', {name: 'Login'}).click();
-    await page.waitForURL(/dashboard\/index/);
   });
 
   test('candidate created via the API is listed', async ({page}) => {

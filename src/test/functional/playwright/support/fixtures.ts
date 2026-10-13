@@ -15,13 +15,15 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {test as base, expect} from '@playwright/test';
+import {test as base, expect, type Page} from '@playwright/test';
 import {createDb, type Db} from './db';
 import {ApiSession} from '../api/BaseApiClass';
 import {CandidatesApiClass} from '../api/recruitment/CandidatesApiClass';
+import {VacanciesApiClass} from '../api/recruitment/VacanciesApiClass';
 import {EmployeesApiClass} from '../api/pim/EmployeesApiClass';
+import {JobTitlesApiClass} from '../api/admin/JobTitlesApiClass';
 import {UsersApiClass} from '../api/admin/UsersApiClass';
-import {users} from '../data/users';
+import {users, type UserKey} from '../data/users';
 
 /**
  * Specs import {test, expect} from here instead of @playwright/test.
@@ -32,18 +34,38 @@ import {users} from '../data/users';
  * - `api`   worker-scoped REST clients for test setup, logged in as admin.
  *           They share one session, so `api.session.loginAs('john')` (or
  *           `api.candidates.asUser('john', () => ...)`) switches all of them.
+ * - `loginAs` option: `test.use({loginAs: 'admin'})` starts every test's
+ *           browser already logged in as that user, reusing the API session's
+ *           cookies instead of filling in the login form. Defaults to null
+ *           (logged out), so the login page itself stays testable.
+ * - `guestPage` a page in its own logged-out browser context, for public
+ *           pages (e.g. the job board) next to a logged-in `page`.
  */
 type Api = {
   session: ApiSession;
   candidates: CandidatesApiClass;
+  vacancies: VacanciesApiClass;
   employees: EmployeesApiClass;
+  jobTitles: JobTitlesApiClass;
   users: UsersApiClass;
 };
 
 export const test = base.extend<
-  object,
+  {loginAs: UserKey | null; guestPage: Page},
   {db: Db; users: typeof users; api: Api}
 >({
+  loginAs: [null, {option: true}],
+  guestPage: async ({browser}, use) => {
+    // Config `use` options (baseURL, ...) still apply; only the cookies are dropped.
+    const context = await browser.newContext({
+      storageState: {cookies: [], origins: []},
+    });
+    await use(await context.newPage());
+    await context.close();
+  },
+  storageState: async ({loginAs, api, storageState}, use) => {
+    await use(loginAs ? await api.session.storageState(loginAs) : storageState);
+  },
   users: [users, {scope: 'worker'}],
   db: [
     async ({playwright}, use, workerInfo) => {
@@ -65,7 +87,9 @@ export const test = base.extend<
       await use({
         session,
         candidates: new CandidatesApiClass(session),
+        vacancies: new VacanciesApiClass(session),
         employees: new EmployeesApiClass(session),
+        jobTitles: new JobTitlesApiClass(session),
         users: new UsersApiClass(session),
       });
       await session.logout();

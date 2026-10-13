@@ -1,6 +1,6 @@
-import { type Locator, type Page } from '@playwright/test';
-import { TextField } from './base-ui-elements/base-ui-elements';
-import { FilterPanel } from './base-ui-elements/filter-panel';
+import {type Locator, type Page} from '@playwright/test';
+import {TextField} from './base-ui-elements/base-ui-elements';
+import {FilterPanel} from './base-ui-elements/filter-panel';
 
 export class CandidatesFilterPanel extends FilterPanel {
   readonly jobTitle = this.select('Job Title');
@@ -19,12 +19,19 @@ export class CandidatesFilterPanel extends FilterPanel {
 
   private date(placeholder: string) {
     return new TextField(
-      this.root.locator('.oxd-date-input', { has: this.page.getByPlaceholder(placeholder, { exact: true }) }),
+      this.root.locator('.oxd-date-input', {
+        has: this.page.getByPlaceholder(placeholder, {exact: true}),
+      }),
     );
   }
 
-  search() { return this.searchButton.click(); }
-  reset()  { return this.resetButton.click(); }
+  search() {
+    return this.searchButton.click();
+  }
+
+  reset() {
+    return this.resetButton.click();
+  }
 }
 
 export class RecruitmentPage {
@@ -39,7 +46,9 @@ export class RecruitmentPage {
 
   /** The candidates-list row whose Candidate column shows `name` */
   row(name: string) {
-    return this.rows.filter({ has: this.page.getByRole('cell', { name, exact: true }) });
+    return this.rows.filter({
+      has: this.page.getByRole('cell', {name, exact: true}),
+    });
   }
 
   goto() {

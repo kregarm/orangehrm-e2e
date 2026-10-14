@@ -4,7 +4,6 @@ import {FilterPanel} from '../base-ui-elements/filter-panel';
 export class EmployeeFilterPanel extends FilterPanel {
   readonly employeeName = this.autocomplete('Employee Name');
   readonly employeeId = this.text('Employee Id');
-  readonly jobTitle = this.select('Job Title');
   /** Current Employees Only (default), Current and Past Employees, Past Employees Only */
   readonly include = this.select('Include');
 

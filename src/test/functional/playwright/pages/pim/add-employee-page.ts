@@ -1,4 +1,4 @@
-import {type Locator, type Page} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {Form} from '../base-ui-elements/form';
 import {
   SwitchField,
@@ -11,7 +11,6 @@ export class AddEmployeePage {
 
   // The name inputs share the one "Employee Full Name" label
   readonly firstName: TextField;
-  readonly middleName: TextField;
   readonly lastName: TextField;
   readonly employeeId: TextField;
   readonly createLoginDetails: SwitchField;
@@ -26,7 +25,6 @@ export class AddEmployeePage {
   constructor(readonly page: Page) {
     this.form = new Form(page);
     this.firstName = this.form.placeholder('First Name');
-    this.middleName = this.form.placeholder('Middle Name');
     this.lastName = this.form.placeholder('Last Name');
     this.employeeId = this.form.text('Employee Id');
     this.createLoginDetails = new SwitchField(
@@ -49,14 +47,12 @@ export class AddEmployeePage {
     return this.page.goto('pim/addEmployee');
   }
 
-  /**
-   * Save and wait for the redirect to the new employee's personal details,
-   * returning their empNumber.
-   */
-  async save(): Promise<number> {
-    const detailsUrl = /pim\/viewPersonalDetails\/empNumber\/(\d+)$/;
+  /** Save and wait for the new employee's loaded Personal Details */
+  async save() {
     await this.saveButton.click();
-    await this.page.waitForURL(detailsUrl);
-    return Number(detailsUrl.exec(this.page.url())![1]);
+    await expect(
+      this.page.getByRole('heading', {name: 'Personal Details'}),
+    ).toBeVisible();
+    await expect(this.page.locator('.oxd-form-loader')).toHaveCount(0);
   }
 }

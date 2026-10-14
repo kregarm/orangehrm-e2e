@@ -23,6 +23,17 @@ export class ClaimPage {
     this.expenses = new ClaimExpenses(page);
   }
 
+  /**
+   * Wait for the claim to load. The Expenses section is only on this page,
+   * not on Submit Claim's create form.
+   */
+  async loaded() {
+    await expect(
+      this.page.getByRole('heading', {name: 'Expenses'}),
+    ).toBeVisible();
+    await expect(this.page.locator('.oxd-form-loader')).toHaveCount(0);
+  }
+
   /** Submit the claim for approval; the page reloads with it Submitted */
   async submit() {
     await this.page.getByRole('button', {name: 'Submit', exact: true}).click();

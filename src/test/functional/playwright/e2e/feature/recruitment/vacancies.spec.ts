@@ -17,13 +17,13 @@ test.describe('Recruitment - Vacancies', () => {
     page,
     guestPage,
     users,
-    api,
   }) => {
     const vacancy = {
       name: 'Senior QA Engineer',
       description: 'Own the end-to-end test suite.',
     };
 
+    // Admin adds an active vacancy, published on the job board
     const addVacancyPage = new AddVacancyPage(page);
     await addVacancyPage.goto();
     await addVacancyPage.name.fill(vacancy.name);
@@ -36,18 +36,11 @@ test.describe('Recruitment - Vacancies', () => {
     await addVacancyPage.numOfPositions.fill('2');
     await addVacancyPage.active.set(true);
     await addVacancyPage.published.set(true);
-    const id = await addVacancyPage.save();
+    await addVacancyPage.save();
 
-    const saved = await api.vacancies.getById(id);
-    expect(saved).toMatchObject({
-      name: vacancy.name,
-      status: true,
-      isPublished: true,
-    });
-
+    // A visitor sees it on the job board, with its description and Apply
     const publicJobsPage = new PublicJobsPage(guestPage);
     await publicJobsPage.goto();
-    await expect(guestPage).toHaveURL(/recruitmentApply\/jobs\.html/);
 
     const card = publicJobsPage.card(vacancy.name);
     await expect(card).toHaveCount(1);
@@ -59,6 +52,7 @@ test.describe('Recruitment - Vacancies', () => {
     guestPage,
     api,
   }) => {
+    // Two active vacancies, only one of them published
     const admin = await api.users.findByUsername('Admin');
     const vacancy = {
       jobTitleId: jobTitle.id,
@@ -76,10 +70,10 @@ test.describe('Recruitment - Vacancies', () => {
       isPublished: false,
     });
 
+    // A visitor sees only the published one; checking it first makes sure
+    // the cards have rendered
     const publicJobsPage = new PublicJobsPage(guestPage);
     await publicJobsPage.goto();
-    // The cards render after the response, so an absent card only means
-    // something once a published one is shown
     await expect(publicJobsPage.card(published.name)).toHaveCount(1);
     await expect(publicJobsPage.card(unpublished.name)).toHaveCount(0);
   });

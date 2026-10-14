@@ -12,16 +12,10 @@ export class ContactDetailsPage {
   readonly form: Form;
 
   readonly street1: TextField;
-  readonly street2: TextField;
   readonly city: TextField;
-  readonly state: TextField;
-  readonly zipCode: TextField;
   readonly country: SelectField;
-  readonly homePhone: TextField;
   readonly mobilePhone: TextField;
-  readonly workPhone: TextField;
   readonly workEmail: TextField;
-  readonly otherEmail: TextField;
 
   readonly saveButton: Locator;
   readonly savedToast: Locator;
@@ -30,16 +24,10 @@ export class ContactDetailsPage {
     this.heading = page.getByRole('heading', {name: 'Contact Details'});
     this.form = new Form(page);
     this.street1 = this.form.text('Street 1');
-    this.street2 = this.form.text('Street 2');
     this.city = this.form.text('City');
-    this.state = this.form.text('State/Province');
-    this.zipCode = this.form.text('Zip/Postal Code');
     this.country = this.form.select('Country');
-    this.homePhone = this.form.text('Home');
     this.mobilePhone = this.form.text('Mobile');
-    this.workPhone = this.form.text('Work');
     this.workEmail = this.form.text('Work Email');
-    this.otherEmail = this.form.text('Other Email');
     this.saveButton = this.form.button('Save');
     this.savedToast = toast(page, 'success', 'Successfully Updated');
   }

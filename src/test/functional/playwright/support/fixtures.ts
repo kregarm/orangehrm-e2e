@@ -18,9 +18,11 @@ import {LeaveRequestsApiClass} from '../api/leave/LeaveRequestsApiClass';
 import {TimesheetPeriodApiClass} from '../api/time/TimesheetPeriodApiClass';
 import {CustomersApiClass} from '../api/time/CustomersApiClass';
 import {ProjectsApiClass} from '../api/time/ProjectsApiClass';
+import {TimesheetsApiClass} from '../api/time/TimesheetsApiClass';
 import {ClaimConfigApiClass} from '../api/claim/ClaimConfigApiClass';
 import {ClaimRequestsApiClass} from '../api/claim/ClaimRequestsApiClass';
 import {KpisApiClass} from '../api/performance/KpisApiClass';
+import {PerformanceReviewsApiClass} from '../api/performance/PerformanceReviewsApiClass';
 import {users, type UserKey} from '../data/users';
 
 /**
@@ -56,9 +58,11 @@ type Api = {
   timesheetPeriod: TimesheetPeriodApiClass;
   customers: CustomersApiClass;
   projects: ProjectsApiClass;
+  timesheets: TimesheetsApiClass;
   claimConfig: ClaimConfigApiClass;
   claimRequests: ClaimRequestsApiClass;
   kpis: KpisApiClass;
+  performanceReviews: PerformanceReviewsApiClass;
 };
 
 export const test = base.extend<
@@ -130,9 +134,11 @@ export const test = base.extend<
         timesheetPeriod: new TimesheetPeriodApiClass(session),
         customers: new CustomersApiClass(session),
         projects: new ProjectsApiClass(session),
+        timesheets: new TimesheetsApiClass(session),
         claimConfig: new ClaimConfigApiClass(session),
         claimRequests: new ClaimRequestsApiClass(session),
         kpis: new KpisApiClass(session),
+        performanceReviews: new PerformanceReviewsApiClass(session),
       });
       await session.logout();
     },

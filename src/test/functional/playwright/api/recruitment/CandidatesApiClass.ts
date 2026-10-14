@@ -43,6 +43,23 @@ export const buildCandidate = (): Pick<
   };
 };
 
+/**
+ * Body of POST /api/v2/recruitment/candidates/{id}/shedule-interview
+ * (CandidateInterviewSchedulingAPI::create)
+ */
+export type InterviewPayload = {
+  interviewName: string;
+  /** Y-m-d */
+  interviewDate: string;
+  /** H:i */
+  interviewTime?: string | null;
+  interviewerEmpNumbers: number[];
+  note?: string | null;
+};
+
+/** CandidateInterviewModel as returned by create */
+export type Interview = {id: number; interviewName: string};
+
 export class CandidatesApiClass extends BaseApiClass {
   static readonly path = 'api/v2/recruitment/candidates';
 
@@ -80,5 +97,34 @@ export class CandidatesApiClass extends BaseApiClass {
   /** Move a candidate from Application Initiated to Shortlisted */
   async shortlist(id: number, note: string | null = null): Promise<void> {
     await this.put(`${CandidatesApiClass.path}/${id}/shortlist`, {note});
+  }
+
+  /** Schedule an interview for a Shortlisted candidate */
+  async scheduleInterview(
+    id: number,
+    interview: InterviewPayload,
+  ): Promise<Interview> {
+    // "shedule" is the endpoint's own spelling
+    const {data} = await this.post<ApiResponse<Interview>>(
+      `${CandidatesApiClass.path}/${id}/shedule-interview`,
+      {interviewTime: null, note: null, ...interview},
+    );
+    return data;
+  }
+
+  async passInterview(
+    id: number,
+    interviewId: number,
+    note: string | null = null,
+  ): Promise<void> {
+    await this.put(
+      `${CandidatesApiClass.path}/${id}/interviews/${interviewId}/pass`,
+      {note},
+    );
+  }
+
+  /** Offer the job to a candidate who passed an interview */
+  async offerJob(id: number, note: string | null = null): Promise<void> {
+    await this.put(`${CandidatesApiClass.path}/${id}/job/offer`, {note});
   }
 }

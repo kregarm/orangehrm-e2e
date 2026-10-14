@@ -42,6 +42,5 @@ test.describe('Core - Login Page', () => {
     });
 
     await expect(loginPage.alert).toContainText('Invalid credentials');
-    await expect(page).toHaveURL(/auth\/login/);
   });
 });

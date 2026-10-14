@@ -34,10 +34,6 @@ export class User {
     return roleIds[this.role];
   }
 
-  get isAdmin(): boolean {
-    return this.role === UserRole.Admin;
-  }
-
   get firstName(): string {
     return this.fullName.split(' ')[0];
   }

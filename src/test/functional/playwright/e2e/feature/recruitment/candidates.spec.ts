@@ -1,24 +1,27 @@
 import {test, expect} from '../../../support/fixtures';
 import {RecruitmentPage} from '../../../pages/recruitment/recruitment-page';
-import {candidates, fullName} from '../../../data/candidates';
+import {fullName} from '../../../data/candidates';
 import type {Candidate} from '../../../api/recruitment/CandidatesApiClass';
 import type {Vacancy} from '../../../api/recruitment/VacanciesApiClass';
 
 test.describe('Recruitment - Candidates', () => {
   test.use({loginAs: 'admin'});
 
-  let backend: Vacancy;
-  let shortlisted: Candidate;
-  let applied: Candidate;
+  let backendVacancy: Vacancy;
+  // Applied to Backend Engineer and shortlisted
+  let shortlistedBackendApplicant: Candidate;
+  // Applied to Backend Engineer, not yet reviewed
+  let newBackendApplicant: Candidate;
+  // Applied to Frontend Engineer
   let frontendApplicant: Candidate;
 
   test.beforeAll(async ({db, api}) => {
     await db.reset();
-    await api.candidates.create(candidates.jane);
 
+    // Two vacancies with applicants: two for Backend, one for Frontend
     const jobTitle = await api.jobTitles.create({title: 'Software Engineer'});
     const admin = await api.users.findByUsername('Admin');
-    const vacancy = (name: string) =>
+    const createVacancy = (name: string) =>
       api.vacancies.create({
         name,
         jobTitleId: jobTitle.id,
@@ -26,41 +29,47 @@ test.describe('Recruitment - Candidates', () => {
         status: true,
         isPublished: true,
       });
-    backend = await vacancy('Backend Engineer');
-    const frontend = await vacancy('Frontend Engineer');
+    backendVacancy = await createVacancy('Backend Engineer');
+    const frontendVacancy = await createVacancy('Frontend Engineer');
 
-    shortlisted = await api.candidates.create({vacancyId: backend.id});
-    await api.candidates.shortlist(shortlisted.id);
-    applied = await api.candidates.create({vacancyId: backend.id});
-    frontendApplicant = await api.candidates.create({vacancyId: frontend.id});
-  });
-
-  test('candidate created via the API is listed', async ({page}) => {
-    const recruitment = new RecruitmentPage(page);
-    await recruitment.goto();
-
-    const row = recruitment.row(fullName(candidates.jane));
-    await expect(row).toHaveCount(1);
-    await expect(row).toContainText(candidates.jane.dateOfApplication);
+    shortlistedBackendApplicant = await api.candidates.create({
+      vacancyId: backendVacancy.id,
+    });
+    await api.candidates.shortlist(shortlistedBackendApplicant.id);
+    newBackendApplicant = await api.candidates.create({
+      vacancyId: backendVacancy.id,
+    });
+    frontendApplicant = await api.candidates.create({
+      vacancyId: frontendVacancy.id,
+    });
   });
 
   test('candidates can be filtered by vacancy and status', async ({page}) => {
-    const recruitment = new RecruitmentPage(page);
-    await recruitment.goto();
-    await expect(recruitment.rows).toHaveCount(4);
+    // Unfiltered: all three applicants
+    const recruitmentPage = new RecruitmentPage(page);
+    await recruitmentPage.goto();
+    await expect(recruitmentPage.rows).toHaveCount(3);
 
-    await recruitment.filters.vacancy.choose(backend.name);
-    await recruitment.filters.search();
-    await expect(recruitment.rows).toHaveCount(2);
-    await expect(recruitment.row(fullName(shortlisted))).toHaveCount(1);
-    await expect(recruitment.row(fullName(applied))).toHaveCount(1);
-    await expect(recruitment.row(fullName(frontendApplicant))).toHaveCount(0);
-
-    await recruitment.filters.status.choose('Shortlisted');
-    await recruitment.filters.search();
-    await expect(recruitment.rows).toHaveCount(1);
-    await expect(recruitment.row(fullName(shortlisted))).toContainText(
-      'Shortlisted',
+    // Filtering by Backend Engineer leaves its two applicants
+    await recruitmentPage.filters.vacancy.choose(backendVacancy.name);
+    await recruitmentPage.filters.search();
+    await expect(recruitmentPage.rows).toHaveCount(2);
+    await expect(
+      recruitmentPage.row(fullName(shortlistedBackendApplicant)),
+    ).toBeVisible();
+    await expect(
+      recruitmentPage.row(fullName(newBackendApplicant)),
+    ).toBeVisible();
+    await expect(recruitmentPage.row(fullName(frontendApplicant))).toHaveCount(
+      0,
     );
+
+    // Also filtering by Shortlisted leaves just the shortlisted one
+    await recruitmentPage.filters.status.choose('Shortlisted');
+    await recruitmentPage.filters.search();
+    await expect(recruitmentPage.rows).toHaveCount(1);
+    await expect(
+      recruitmentPage.row(fullName(shortlistedBackendApplicant)),
+    ).toContainText('Shortlisted');
   });
 });

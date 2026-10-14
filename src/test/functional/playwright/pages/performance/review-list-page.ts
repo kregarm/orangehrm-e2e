@@ -32,7 +32,8 @@ export class ReviewListPage {
   /** Open a review to evaluate it (its first action) */
   async open(row: Locator): Promise<ReviewEvaluationPage> {
     await row.getByRole('button').first().click();
-    await this.page.waitForURL(/performance\/reviewEvaluate(ByAdmin)?\//);
-    return new ReviewEvaluationPage(this.page);
+    const reviewEvaluationPage = new ReviewEvaluationPage(this.page);
+    await reviewEvaluationPage.loaded();
+    return reviewEvaluationPage;
   }
 }

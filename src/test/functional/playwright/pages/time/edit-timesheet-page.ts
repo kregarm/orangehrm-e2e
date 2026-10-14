@@ -1,4 +1,4 @@
-import {type Locator, type Page} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {
   AutocompleteField,
   SelectField,
@@ -6,9 +6,11 @@ import {
 
 /** Time > My Timesheets > Edit (time/editTimesheet/{id}) */
 export class EditTimesheetPage {
+  readonly heading: Locator;
   readonly rows: Locator;
 
   constructor(readonly page: Page) {
+    this.heading = page.getByRole('heading', {name: 'Edit Timesheet'});
     this.rows = page.locator(
       '.orangehrm-timesheet-table-body-row:has(.--duration-input)',
     );
@@ -27,9 +29,11 @@ export class EditTimesheetPage {
     };
   }
 
-  /** Save and wait for the redirect back to the timesheet */
+  /** Save and wait to be back on My Timesheet */
   async save() {
     await this.page.getByRole('button', {name: 'Save', exact: true}).click();
-    await this.page.waitForURL(/time\/viewMyTimesheet/);
+    await expect(
+      this.page.getByRole('heading', {name: 'My Timesheet'}),
+    ).toBeVisible();
   }
 }

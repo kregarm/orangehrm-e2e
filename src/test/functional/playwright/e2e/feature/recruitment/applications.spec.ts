@@ -31,6 +31,7 @@ test.describe('Recruitment - Public applications', () => {
       email: 'ada.lovelace@example.com',
     };
 
+    // Ada applies on the public form, with her resume
     const applyVacancyPage = new ApplyVacancyPage(guestPage);
     await applyVacancyPage.goto(vacancy.id);
     await applyVacancyPage.firstName.fill(applicant.firstName);
@@ -41,14 +42,19 @@ test.describe('Recruitment - Public applications', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from('Ada Lovelace\nAnalytical engines'),
     });
+
+    // She gets a confirmation
     await applyVacancyPage.submit();
     await expect(applyVacancyPage.confirmation).toContainText(
       'Application Received',
     );
 
-    const recruitment = new RecruitmentPage(page);
-    await recruitment.goto();
-    const row = recruitment.row(`${applicant.firstName} ${applicant.lastName}`);
+    // Admin sees her as a candidate for the vacancy, Application Initiated
+    const recruitmentPage = new RecruitmentPage(page);
+    await recruitmentPage.goto();
+    const row = recruitmentPage.row(
+      `${applicant.firstName} ${applicant.lastName}`,
+    );
     await expect(row).toHaveCount(1);
     await expect(row).toContainText(vacancy.name);
     await expect(row).toContainText('Application Initiated');

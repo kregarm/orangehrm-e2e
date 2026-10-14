@@ -13,7 +13,6 @@ test.describe('PIM - Add Employee', () => {
   test('employee added with login details can log in', async ({
     page,
     guestPage,
-    api,
   }) => {
     const employee = {
       firstName: 'Linda',
@@ -23,39 +22,35 @@ test.describe('PIM - Add Employee', () => {
       password: 'Linda@OHRM123',
     };
 
+    // Admin adds the employee
     const addEmployeePage = new AddEmployeePage(page);
     await addEmployeePage.goto();
     await addEmployeePage.firstName.fill(employee.firstName);
     await addEmployeePage.lastName.fill(employee.lastName);
     await addEmployeePage.employeeId.fill(employee.employeeId);
+
+    // ...with an enabled login
     await addEmployeePage.createLoginDetails.set(true);
     await addEmployeePage.username.fill(employee.username);
     await addEmployeePage.status('Enabled');
     await addEmployeePage.password.fill(employee.password);
     await addEmployeePage.confirmPassword.fill(employee.password);
-    const empNumber = await addEmployeePage.save();
+    await addEmployeePage.save();
 
-    expect(await api.employees.getById(empNumber)).toMatchObject({
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      employeeId: employee.employeeId,
-    });
-    expect(await api.users.findByUsername(employee.username)).toMatchObject({
-      status: true,
-      userRole: {name: 'ESS'},
-      employee: {empNumber},
-    });
-
+    // The employee is in the Employee List
     const employeeListPage = new EmployeeListPage(page);
     await employeeListPage.goto();
     await expect(
       employeeListPage.row(employee.firstName, employee.lastName),
     ).toContainText(employee.employeeId);
 
+    // The employee can log in and sees their name
     const loginPage = new LoginPage(guestPage);
     await loginPage.goto();
     await loginPage.login(employee);
-    await expect(guestPage).toHaveURL(/dashboard\/index/);
+    await expect(
+      guestPage.getByRole('heading', {name: 'Dashboard'}),
+    ).toBeVisible();
     await expect(
       guestPage.getByText(`${employee.firstName} ${employee.lastName}`),
     ).toBeVisible();

@@ -31,7 +31,8 @@ export class SubmitClaimPage {
   /** Create the claim (status Initiated) and open it to add expenses */
   async create(): Promise<ClaimPage> {
     await this.createButton.click();
-    await this.page.waitForURL(/claim\/submitClaim\/id\/\d+$/);
-    return new ClaimPage(this.page);
+    const claimPage = new ClaimPage(this.page);
+    await claimPage.loaded();
+    return claimPage;
   }
 }

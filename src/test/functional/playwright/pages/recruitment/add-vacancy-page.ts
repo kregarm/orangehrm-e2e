@@ -1,4 +1,4 @@
-import {type Locator, type Page} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {Form} from '../base-ui-elements/form';
 import {
   type AutocompleteField,
@@ -44,15 +44,12 @@ export class AddVacancyPage {
     return this.page.goto('recruitment/addJobVacancy');
   }
 
-  /**
-   * Save and wait for the redirect to the new vacancy's edit page,
-   * returning its id. (The POST body can't be read: the redirect follows
-   * too quickly.)
-   */
-  async save(): Promise<number> {
-    const editUrl = /recruitment\/addJobVacancy\/(\d+)$/;
+  /** Save and wait for the new vacancy's loaded edit page */
+  async save() {
     await this.saveButton.click();
-    await this.page.waitForURL(editUrl);
-    return Number(editUrl.exec(this.page.url())![1]);
+    await expect(
+      this.page.getByRole('heading', {name: 'Edit Vacancy'}),
+    ).toBeVisible();
+    await expect(this.page.locator('.oxd-form-loader')).toHaveCount(0);
   }
 }

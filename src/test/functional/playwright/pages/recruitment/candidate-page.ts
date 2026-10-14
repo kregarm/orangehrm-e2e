@@ -1,16 +1,8 @@
 import {type Locator, type Page} from '@playwright/test';
-import {CandidateActionForm} from './candidate-action-form';
-
-/** The actions the Application Stage offers, depending on the status */
-export type CandidateAction =
-  | 'Shortlist'
-  | 'Reject'
-  | 'Schedule Interview'
-  | 'Mark Interview Passed'
-  | 'Mark Interview Failed'
-  | 'Offer Job'
-  | 'Offer Declined'
-  | 'Hire';
+import {
+  CandidateActionForm,
+  type CandidateAction,
+} from './candidate-action-form';
 
 /**
  * Recruitment > Candidates > a candidate (recruitment/addCandidate/{id}).
@@ -42,7 +34,8 @@ export class CandidatePage {
   /** Start `name`, which opens its form (recruitment/changeCandidateVacancyStatus) */
   async start(name: CandidateAction): Promise<CandidateActionForm> {
     await this.action(name).click();
-    await this.page.waitForURL(/recruitment\/changeCandidateVacancyStatus/);
-    return new CandidateActionForm(this.page);
+    const candidateActionForm = new CandidateActionForm(this.page, name);
+    await candidateActionForm.loaded();
+    return candidateActionForm;
   }
 }

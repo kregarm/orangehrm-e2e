@@ -1,5 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
 import {LoginPage} from '../../../pages/core/login-page';
+import {DashboardPage} from '../../../pages/core/dashboard-page';
 import {SystemUsersPage} from '../../../pages/admin/system-users-page';
 
 test.describe('Core - Access control', () => {
@@ -29,11 +30,11 @@ test.describe('Core - Access control', () => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(users.john);
-    await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
+    const dashboardPage = new DashboardPage(page);
+    await expect(dashboardPage.heading).toBeVisible();
 
     // He logs out and is back at the login form
-    await page.locator('.oxd-userdropdown-tab').click();
-    await page.getByRole('menuitem', {name: 'Logout'}).click();
+    await dashboardPage.topBar.logout();
     await expect(loginPage.loginButton).toBeVisible();
 
     // His pages now send him to the login form too

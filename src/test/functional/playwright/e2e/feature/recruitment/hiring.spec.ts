@@ -71,14 +71,14 @@ test.describe('Recruitment - Hiring', () => {
     // Admin schedules an interview with themselves as interviewer
     const candidatePage = new CandidatePage(page, candidate.id);
     await candidatePage.goto();
-    const interviewForm = await candidatePage.start('Schedule Interview');
-    await interviewForm.interviewTitle.fill(interview.interviewName);
-    await interviewForm.interviewer.pick(
+    const candidateActionForm = await candidatePage.start('Schedule Interview');
+    await candidateActionForm.interviewTitle.fill(interview.interviewName);
+    await candidateActionForm.interviewer.pick(
       users.admin.firstName,
       users.admin.fullName,
     );
-    await interviewForm.date.fill(interview.interviewDate);
-    await interviewForm.save();
+    await candidateActionForm.date.fill(interview.interviewDate);
+    await candidateActionForm.save();
     await expect(candidatePage.status).toHaveText(
       'Status: Interview Scheduled',
     );
@@ -124,9 +124,9 @@ test.describe('Recruitment - Hiring', () => {
     await expect(candidatePage.status).toHaveText('Status: Shortlisted');
 
     // Admin rejects them, which ends the pipeline
-    const reject = await candidatePage.start('Reject');
-    await reject.notes.fill('Not enough experience with SQL');
-    await reject.save();
+    const candidateActionForm = await candidatePage.start('Reject');
+    await candidateActionForm.notes.fill('Not enough experience with SQL');
+    await candidateActionForm.save();
     await expect(candidatePage.status).toHaveText('Status: Rejected');
     await expect(candidatePage.stage.getByRole('button')).toHaveCount(0);
   });

@@ -2,6 +2,7 @@ import {test, expect} from '../../../support/fixtures';
 import {AddEmployeePage} from '../../../pages/pim/add-employee-page';
 import {EmployeeListPage} from '../../../pages/pim/employee-list-page';
 import {LoginPage} from '../../../pages/core/login-page';
+import {DashboardPage} from '../../../pages/core/dashboard-page';
 
 test.describe('PIM - Add Employee', () => {
   test.use({loginAs: 'admin'});
@@ -48,11 +49,10 @@ test.describe('PIM - Add Employee', () => {
     const loginPage = new LoginPage(guestPage);
     await loginPage.goto();
     await loginPage.login(employee);
-    await expect(
-      guestPage.getByRole('heading', {name: 'Dashboard'}),
-    ).toBeVisible();
-    await expect(
-      guestPage.getByText(`${employee.firstName} ${employee.lastName}`),
-    ).toBeVisible();
+    const dashboardPage = new DashboardPage(guestPage);
+    await expect(dashboardPage.heading).toBeVisible();
+    await expect(dashboardPage.topBar.userDropdown).toContainText(
+      `${employee.firstName} ${employee.lastName}`,
+    );
   });
 });

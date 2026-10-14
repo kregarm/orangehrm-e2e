@@ -64,12 +64,14 @@ test.describe('Performance - Reviews', () => {
     await addReviewPage.activate();
 
     // John finds it Activated in My Reviews
-    const myReviews = new ReviewListPage(
+    const myReviewListPage = new ReviewListPage(
       await pageAs('john'),
       'performance/myPerformanceReview',
     );
-    await myReviews.goto();
-    await expect(myReviews.row(periodText(review))).toContainText('Activated');
+    await myReviewListPage.goto();
+    await expect(myReviewListPage.row(periodText(review))).toContainText(
+      'Activated',
+    );
   });
 
   test('employee completes their self evaluation', async ({
@@ -86,28 +88,30 @@ test.describe('Performance - Reviews', () => {
     });
 
     // John rates himself and completes his self evaluation
-    const myReviews = new ReviewListPage(
+    const myReviewListPage = new ReviewListPage(
       await pageAs('john'),
       'performance/myPerformanceReview',
     );
-    await myReviews.goto();
-    const selfEvaluation = await myReviews.open(
-      myReviews.row(periodText(review)),
+    await myReviewListPage.goto();
+    const reviewEvaluationPage = await myReviewListPage.open(
+      myReviewListPage.row(periodText(review)),
     );
-    await selfEvaluation.kpi(testCoverage).rating.fill('4');
-    await selfEvaluation.kpi(testCoverage).comment.fill('Wrote the e2e suite');
-    await selfEvaluation.kpi(defectsFound).rating.fill('3');
-    await selfEvaluation.generalComment.fill('A productive period');
-    await selfEvaluation.complete();
+    await reviewEvaluationPage.kpi(testCoverage).rating.fill('4');
+    await reviewEvaluationPage
+      .kpi(testCoverage)
+      .comment.fill('Wrote the e2e suite');
+    await reviewEvaluationPage.kpi(defectsFound).rating.fill('3');
+    await reviewEvaluationPage.generalComment.fill('A productive period');
+    await reviewEvaluationPage.complete();
 
     // Mike finds it In Progress, waiting for his evaluation
-    const employeeReviews = new ReviewListPage(
+    const employeeReviewListPage = new ReviewListPage(
       await pageAs('mike'),
       'performance/searchEvaluatePerformanceReview',
     );
-    await employeeReviews.goto();
+    await employeeReviewListPage.goto();
     await expect(
-      employeeReviews.row(users.john.fullName, periodText(review)),
+      employeeReviewListPage.row(users.john.fullName, periodText(review)),
     ).toContainText('In Progress');
   });
 
@@ -125,35 +129,41 @@ test.describe('Performance - Reviews', () => {
     );
 
     // Mike rates John, adds the final rating and completes the review
-    const employeeReviews = new ReviewListPage(
+    const employeeReviewListPage = new ReviewListPage(
       await pageAs('mike'),
       'performance/searchEvaluatePerformanceReview',
     );
-    await employeeReviews.goto();
-    const johnsReview = employeeReviews.row(
+    await employeeReviewListPage.goto();
+    const johnsReview = employeeReviewListPage.row(
       users.john.fullName,
       periodText(review),
     );
     await expect(johnsReview).toContainText('In Progress');
-    const evaluation = await employeeReviews.open(johnsReview);
-    await evaluation.kpi(testCoverage).rating.fill('5');
-    await evaluation.kpi(defectsFound).rating.fill('4');
-    await evaluation.generalComment.fill('Raised the bar for quality');
-    await evaluation.finalization('Date of Completion').fill(`${year}-07-15`);
-    await evaluation.finalization('Final Rating').fill('4.5');
-    await evaluation
+    const reviewEvaluationPage = await employeeReviewListPage.open(johnsReview);
+    await reviewEvaluationPage.kpi(testCoverage).rating.fill('5');
+    await reviewEvaluationPage.kpi(defectsFound).rating.fill('4');
+    await reviewEvaluationPage.generalComment.fill(
+      'Raised the bar for quality',
+    );
+    await reviewEvaluationPage
+      .finalization('Date of Completion')
+      .fill(`${year}-07-15`);
+    await reviewEvaluationPage.finalization('Final Rating').fill('4.5');
+    await reviewEvaluationPage
       .finalization('Final Comments')
       .fill('Exceeds expectations');
-    await evaluation.complete();
+    await reviewEvaluationPage.complete();
 
     // Both Mike and John see it as Completed
-    await employeeReviews.goto();
+    await employeeReviewListPage.goto();
     await expect(johnsReview).toContainText('Completed');
-    const myReviews = new ReviewListPage(
+    const myReviewListPage = new ReviewListPage(
       await pageAs('john'),
       'performance/myPerformanceReview',
     );
-    await myReviews.goto();
-    await expect(myReviews.row(periodText(review))).toContainText('Completed');
+    await myReviewListPage.goto();
+    await expect(myReviewListPage.row(periodText(review))).toContainText(
+      'Completed',
+    );
   });
 });

@@ -32,12 +32,22 @@ test.describe('PIM - My Info', () => {
     await contactDetailsPage.save();
 
     // Saved for HR too: the admin sees them on John's record
-    const adminView = new ContactDetailsPage(await pageAs('admin'));
-    await adminView.goto(empNumber);
-    await expect(adminView.street1.input).toHaveValue(contact.street1);
-    await expect(adminView.city.input).toHaveValue(contact.city);
-    await expect(adminView.country.root).toContainText(contact.country);
-    await expect(adminView.mobilePhone.input).toHaveValue(contact.mobilePhone);
-    await expect(adminView.workEmail.input).toHaveValue(contact.workEmail);
+    const adminContactDetailsPage = new ContactDetailsPage(
+      await pageAs('admin'),
+    );
+    await adminContactDetailsPage.goto(empNumber);
+    await expect(adminContactDetailsPage.street1.input).toHaveValue(
+      contact.street1,
+    );
+    await expect(adminContactDetailsPage.city.input).toHaveValue(contact.city);
+    await expect(adminContactDetailsPage.country.root).toContainText(
+      contact.country,
+    );
+    await expect(adminContactDetailsPage.mobilePhone.input).toHaveValue(
+      contact.mobilePhone,
+    );
+    await expect(adminContactDetailsPage.workEmail.input).toHaveValue(
+      contact.workEmail,
+    );
   });
 });

@@ -1,5 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
 import {LoginPage} from '../../../pages/core/login-page';
+import {DashboardPage} from '../../../pages/core/dashboard-page';
 
 test.describe('Core - Login Page', () => {
   test.beforeAll(async ({db, api, users}) => {
@@ -12,11 +13,14 @@ test.describe('Core - Login Page', () => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(users.john);
-    await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
+    const dashboardPage = new DashboardPage(page);
+    await expect(dashboardPage.heading).toBeVisible();
 
     // He sees his name and the ESS menu, without Admin
-    await expect(page.getByText(users.john.fullName)).toBeVisible();
-    const menu = page.getByRole('navigation');
+    await expect(dashboardPage.topBar.userDropdown).toContainText(
+      users.john.fullName,
+    );
+    const {menu} = dashboardPage;
     await expect(menu.getByRole('link', {name: 'My Info'})).toBeVisible();
     await expect(
       menu.getByRole('link', {name: 'Admin', exact: true}),

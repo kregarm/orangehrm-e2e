@@ -33,7 +33,7 @@ export class LeaveListPage {
 
   /** The Status cell, e.g. "Pending Approval (2.00)" */
   status(row: Locator) {
-    return row.getByRole('cell').nth(6);
+    return this.table.cell(row, 'Status');
   }
 
   /** Click a row action (Approve, Reject, Cancel) and wait for the confirmation */

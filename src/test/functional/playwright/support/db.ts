@@ -22,14 +22,6 @@ export const createDb = (request: APIRequestContext) => {
   return {
     /** Reset the DB back to fresh install state (cy.task('db:reset')) */
     reset: () => post('database/reset'),
-    /** Truncate the given tables (cy.task('db:truncate', {tables})) */
-    truncate: (tables: string[]) => post('truncate-table', {tables}),
-    /** Create a savepoint of DB data (cy.task('db:snapshot', {name})) */
-    snapshot: (name: string) =>
-      post('database/create-savepoint', {savepointName: name}),
-    /** Restore the DB to a savepoint (cy.task('db:restore', {name})) */
-    restore: (name: string) =>
-      post('database/restore-to-savepoint', {savepointName: name}),
     /** Delete the given savepoints, or all when omitted (cy.task('db:clearSnapshots', {names})) */
     clearSnapshots: (names?: string[]) =>
       post('database/delete-savepoints', {savepointNames: names ?? []}),

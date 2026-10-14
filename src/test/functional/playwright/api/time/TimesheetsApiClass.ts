@@ -45,7 +45,9 @@ export class TimesheetsApiClass extends BaseApiClass {
       date.setUTCDate(start.getUTCDate() + day);
       return date.toISOString().slice(0, 10);
     });
-    const duration = `${String(hoursPerDay).padStart(2, '0')}:00`;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const minutes = Math.round(hoursPerDay * 60);
+    const duration = `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
     await this.put(`${TimesheetsApiClass.path}/${timesheet.id}/entries`, {
       entries: [
         {

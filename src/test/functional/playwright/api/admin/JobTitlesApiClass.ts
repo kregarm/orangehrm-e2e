@@ -27,12 +27,4 @@ export class JobTitlesApiClass extends BaseApiClass {
     );
     return data;
   }
-
-  async deleteByIds(ids: number[]): Promise<number[]> {
-    const {data} = await this.delete<ApiResponse<number[]>>(
-      JobTitlesApiClass.path,
-      {ids},
-    );
-    return data;
-  }
 }

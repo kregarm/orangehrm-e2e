@@ -3,6 +3,7 @@ import {
   AutocompleteField,
   SelectField,
 } from '../base-ui-elements/base-ui-elements';
+import {timesheetCell, type Weekday} from './timesheet-view';
 
 /** Time > My Timesheets > Edit (time/editTimesheet/{id}) */
 export class EditTimesheetPage {
@@ -16,16 +17,29 @@ export class EditTimesheetPage {
     );
   }
 
-  /** The editable row `index` (0-based); "Add Row" adds more */
+  /**
+   * The editable row `index` (0-based); "Add Row" adds more. Rows are only
+   * told apart by position until a project is picked.
+   */
   row(index: number) {
     const row = this.rows.nth(index);
-    const cell = (column: number) => row.getByRole('cell').nth(column);
     return {
       /** Pick by "Customer - Project" */
-      project: new AutocompleteField(cell(0), this.page),
-      activity: new SelectField(cell(1), this.page),
-      /** Duration per day, Monday-first for the default period, e.g. "8" */
-      hours: (day: number) => cell(2 + day).locator('input'),
+      project: new AutocompleteField(
+        row
+          .getByRole('cell')
+          .filter({has: this.page.locator('.oxd-autocomplete-wrapper')}),
+        this.page,
+      ),
+      activity: new SelectField(
+        row
+          .getByRole('cell')
+          .filter({has: this.page.locator('.oxd-select-wrapper')}),
+        this.page,
+      ),
+      /** The day's duration input, e.g. filled with "8" */
+      hours: async (day: Weekday) =>
+        (await timesheetCell(this.page, row, day)).locator('input'),
     };
   }
 

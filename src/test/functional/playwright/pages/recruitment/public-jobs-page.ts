@@ -8,19 +8,18 @@ export class PublicJobsPage {
     this.cards = page.locator('.orangehrm-card-container');
   }
 
-  /** The vacancy card titled `name` */
+  /**
+   * The vacancy card titled `name`. The cards render after the page loads,
+   * so before asserting a card is absent, wait for one that should be there.
+   */
   card(name: string) {
     return this.cards.filter({
-      has: this.page.locator('.orangehrm-vacancy-card-header', {
-        hasText: new RegExp(`^${name}`),
-      }),
+      has: this.page
+        .locator('.orangehrm-vacancy-card-header')
+        .getByText(name, {exact: true}),
     });
   }
 
-  /**
-   * The cards render after the page loads, so before asserting a card is
-   * absent, wait for one that should be there
-   */
   goto() {
     return this.page.goto('recruitmentApply/jobs.html');
   }

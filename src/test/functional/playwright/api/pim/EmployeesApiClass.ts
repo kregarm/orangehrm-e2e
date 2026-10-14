@@ -25,10 +25,7 @@ export type Employee = {
 let sequence = 0;
 
 /** Unique, valid values for the required fields */
-export const buildEmployee = (): Pick<
-  EmployeePayload,
-  'firstName' | 'lastName'
-> => ({
+const buildEmployee = (): Pick<EmployeePayload, 'firstName' | 'lastName'> => ({
   firstName: 'Test',
   lastName: `Employee ${Date.now().toString(36)}${(sequence++).toString(36)}`,
 });
@@ -41,13 +38,6 @@ export class EmployeesApiClass extends BaseApiClass {
     const {data} = await this.post<ApiResponse<Employee>>(
       EmployeesApiClass.path,
       compact({...buildEmployee(), ...fields}),
-    );
-    return data;
-  }
-
-  async getById(empNumber: number): Promise<Employee> {
-    const {data} = await this.get<ApiResponse<Employee>>(
-      `${EmployeesApiClass.path}/${empNumber}`,
     );
     return data;
   }

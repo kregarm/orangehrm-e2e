@@ -24,12 +24,4 @@ export class EmployeeListPage {
   goto() {
     return this.page.goto('pim/viewEmployeeList');
   }
-
-  /**
-   * Search with the filters. The rows update once the results arrive, so
-   * assert on expected rows, or on `noRecordsFound` for an empty result.
-   */
-  search() {
-    return this.filters.searchButton.click();
-  }
 }

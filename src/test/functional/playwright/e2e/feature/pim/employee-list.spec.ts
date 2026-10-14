@@ -32,7 +32,7 @@ test.describe('PIM - Employee List', () => {
       alice.firstName,
       `${alice.firstName} ${alice.lastName}`,
     );
-    await employeeListPage.search();
+    await employeeListPage.filters.search();
     await expect(employeeListPage.table.rows).toHaveCount(1);
     await expect(
       employeeListPage.row(alice.firstName, alice.lastName),
@@ -41,7 +41,7 @@ test.describe('PIM - Employee List', () => {
     // Searching by ID finds only Bob
     await employeeListPage.filters.resetButton.click();
     await employeeListPage.filters.employeeId.fill(bob.employeeId);
-    await employeeListPage.search();
+    await employeeListPage.filters.search();
     await expect(employeeListPage.table.rows).toHaveCount(1);
     await expect(
       employeeListPage.row(bob.firstName, bob.lastName),
@@ -58,13 +58,13 @@ test.describe('PIM - Employee List', () => {
     await employeeListPage.filters.employeeId.fill(
       terminatedEmployee.employeeId,
     );
-    await employeeListPage.search();
+    await employeeListPage.filters.search();
     await expect(employeeListPage.noRecordsFound).toBeVisible();
     await expect(employeeListPage.table.rows).toHaveCount(0);
 
     // He is listed once past employees are included
     await employeeListPage.filters.include.choose('Current and Past Employees');
-    await employeeListPage.search();
+    await employeeListPage.filters.search();
     await expect(
       employeeListPage.row(
         terminatedEmployee.firstName,

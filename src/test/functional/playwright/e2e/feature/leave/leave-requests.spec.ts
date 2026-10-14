@@ -71,7 +71,7 @@ test.describe('Leave - Leave requests', () => {
     const myLeaveListPage = new MyLeaveListPage(page);
     await myLeaveListPage.goto();
     const row = myLeaveListPage.row(users.john.fullName, leaveDates(from, to));
-    await expect(myLeaveListPage.status(row)).toHaveText(
+    await expect(await myLeaveListPage.status(row)).toHaveText(
       'Pending Approval (2.00)',
     );
   });
@@ -95,7 +95,7 @@ test.describe('Leave - Leave requests', () => {
     const leaveListPage = new LeaveListPage(await pageAs('mike'));
     await leaveListPage.goto(nextPeriod);
     const pending = leaveListPage.row(users.john.fullName, leaveDates(date));
-    await expect(leaveListPage.status(pending)).toHaveText(
+    await expect(await leaveListPage.status(pending)).toHaveText(
       'Pending Approval (1.00)',
     );
     await leaveListPage.act(pending, 'Approve');
@@ -105,7 +105,9 @@ test.describe('Leave - Leave requests', () => {
     const myLeaveListPage = new MyLeaveListPage(page);
     await myLeaveListPage.goto(nextPeriod);
     const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
-    await expect(myLeaveListPage.status(row)).toHaveText('Scheduled (1.00)');
+    await expect(await myLeaveListPage.status(row)).toHaveText(
+      'Scheduled (1.00)',
+    );
   });
 
   test('supervisor rejects leave and the days return to the balance', async ({
@@ -143,7 +145,9 @@ test.describe('Leave - Leave requests', () => {
     const myLeaveListPage = new MyLeaveListPage(page);
     await myLeaveListPage.goto();
     const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
-    await expect(myLeaveListPage.status(row)).toHaveText('Rejected (1.00)');
+    await expect(await myLeaveListPage.status(row)).toHaveText(
+      'Rejected (1.00)',
+    );
   });
 
   test('employee cancels their pending leave', async ({page, api, users}) => {
@@ -162,11 +166,13 @@ test.describe('Leave - Leave requests', () => {
     const myLeaveListPage = new MyLeaveListPage(page);
     await myLeaveListPage.goto();
     const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
-    await expect(myLeaveListPage.status(row)).toHaveText(
+    await expect(await myLeaveListPage.status(row)).toHaveText(
       'Pending Approval (1.00)',
     );
     await myLeaveListPage.act(row, 'Cancel');
-    await expect(myLeaveListPage.status(row)).toHaveText('Cancelled (1.00)');
+    await expect(await myLeaveListPage.status(row)).toHaveText(
+      'Cancelled (1.00)',
+    );
 
     // The day returns to the balance
     expect(await balance()).toMatchObject({

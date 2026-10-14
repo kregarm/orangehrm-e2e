@@ -24,10 +24,7 @@ export type ApiResponse<T, M = Record<string, unknown>> = {
   rels: unknown[];
 };
 
-/**
- * Thrown for any non-2xx response. `invalidParams` lists the offending keys
- * of a 422 so assertions can target them directly.
- */
+/** Thrown for any non-2xx response */
 export class ApiError extends Error {
   constructor(
     readonly method: string,
@@ -44,13 +41,6 @@ export class ApiError extends Error {
       {cause},
     );
     this.name = 'ApiError';
-  }
-
-  get invalidParams(): string[] {
-    const error = (
-      this.body as {error?: {data?: {invalidParamKeys?: string[]}}}
-    )?.error;
-    return error?.data?.invalidParamKeys ?? [];
   }
 
   private static describe(body: unknown, cause: unknown): string {
@@ -90,14 +80,10 @@ export class ApiSession {
     private readonly baseURL: string,
   ) {}
 
-  get user(): string | undefined {
-    return this.current?.username;
-  }
-
   /** Authenticate as `user` (reusing an existing session) and make it current */
-  async loginAs(user: UserRef, {force = false} = {}): Promise<void> {
+  async loginAs(user: UserRef): Promise<void> {
     const credentials = resolveCredentials(user);
-    if (force || !this.contexts.has(credentials.username)) {
+    if (!this.contexts.has(credentials.username)) {
       await this.authenticate(credentials);
     }
     this.current = credentials;
@@ -232,14 +218,6 @@ export class ApiSession {
  */
 export class BaseApiClass {
   constructor(protected readonly session: ApiSession) {}
-
-  get user(): string | undefined {
-    return this.session.user;
-  }
-
-  loginAs(user: UserRef, options?: {force?: boolean}): Promise<void> {
-    return this.session.loginAs(user, options);
-  }
 
   asUser<T>(user: UserRef, fn: () => Promise<T>): Promise<T> {
     return this.session.asUser(user, fn);

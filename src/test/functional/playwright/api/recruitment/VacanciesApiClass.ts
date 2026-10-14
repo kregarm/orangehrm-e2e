@@ -46,19 +46,4 @@ export class VacanciesApiClass extends BaseApiClass {
     );
     return data;
   }
-
-  async getById(id: number): Promise<Vacancy> {
-    const {data} = await this.get<ApiResponse<Vacancy>>(
-      `${VacanciesApiClass.path}/${id}`,
-    );
-    return data;
-  }
-
-  async deleteByIds(ids: number[]): Promise<number[]> {
-    const {data} = await this.delete<ApiResponse<number[]>>(
-      VacanciesApiClass.path,
-      {ids},
-    );
-    return data;
-  }
 }

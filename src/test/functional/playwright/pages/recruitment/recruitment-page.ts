@@ -1,22 +1,20 @@
-import {type Locator, type Page} from '@playwright/test';
+import {type Page} from '@playwright/test';
+import {Table} from '../base-ui-elements/table';
 import {CandidatesFilterPanel} from './candidates-filter-panel';
 
 /** Recruitment > Candidates (recruitment/viewCandidates) */
 export class RecruitmentPage {
   readonly filters: CandidatesFilterPanel;
-
-  readonly rows: Locator;
+  readonly table: Table;
 
   constructor(readonly page: Page) {
     this.filters = new CandidatesFilterPanel(page);
-    this.rows = page.locator('.oxd-table-body .oxd-table-card');
+    this.table = new Table(page);
   }
 
   /** The candidates-list row whose Candidate column shows `name` */
   row(name: string) {
-    return this.rows.filter({
-      has: this.page.getByRole('cell', {name, exact: true}),
-    });
+    return this.table.row(name);
   }
 
   goto() {

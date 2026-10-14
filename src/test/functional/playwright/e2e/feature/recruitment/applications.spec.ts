@@ -8,14 +8,13 @@ test.describe('Recruitment - Public applications', () => {
 
   let vacancy: Vacancy;
 
-  test.beforeAll(async ({db, api}) => {
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
     const jobTitle = await api.jobTitles.create({title: 'Support Engineer'});
-    const admin = await api.users.findByUsername('Admin');
     vacancy = await api.vacancies.create({
       name: 'Support Engineer - Remote',
       jobTitleId: jobTitle.id,
-      employeeId: admin!.employee.empNumber,
+      employeeId: await api.users.empNumberOf(users.admin),
       status: true,
       isPublished: true,
     });

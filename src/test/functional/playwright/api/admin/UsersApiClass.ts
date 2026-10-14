@@ -68,12 +68,11 @@ export class UsersApiClass extends BaseApiClass {
     return matches.find((user) => user.userName === username);
   }
 
-  async deleteByIds(ids: number[]): Promise<number[]> {
-    const {data} = await this.delete<ApiResponse<number[]>>(
-      UsersApiClass.path,
-      {ids},
-    );
-    return data;
+  /** empNumber of the employee `user`'s login belongs to; the login must exist */
+  async empNumberOf(user: User): Promise<number> {
+    const existing = await this.findByUsername(user.username);
+    if (!existing) throw new Error(`User "${user.username}" does not exist`);
+    return existing.employee.empNumber;
   }
 
   /**

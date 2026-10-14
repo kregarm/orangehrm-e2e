@@ -27,7 +27,7 @@ export class CandidatePage {
     return this.page.goto(`recruitment/addCandidate/${this.candidateId}`);
   }
 
-  action(name: CandidateAction) {
+  private action(name: CandidateAction) {
     return this.stage.getByRole('button', {name, exact: true});
   }
 

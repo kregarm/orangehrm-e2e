@@ -29,9 +29,10 @@ export class ReviewListPage {
     return this.table.row(...cells);
   }
 
-  /** Open a review to evaluate it (its first action) */
+  /** Open a review: its one action, Evaluate (or View once completed) */
   async open(row: Locator): Promise<ReviewEvaluationPage> {
-    await row.getByRole('button').first().click();
+    const actions = await this.table.cell(row, 'Actions');
+    await actions.getByRole('button').click();
     const reviewEvaluationPage = new ReviewEvaluationPage(this.page);
     await reviewEvaluationPage.loaded();
     return reviewEvaluationPage;

@@ -2,13 +2,12 @@ import {test, expect} from '../../../support/fixtures';
 import {LoginPage} from '../../../pages/core/login-page';
 
 test.describe('Core - Login Page', () => {
-  test.beforeAll(async ({db}) => {
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
+    await api.users.ensure(users.john);
   });
 
-  test('should login as an ESS user', async ({page, users, api}) => {
-    await api.users.ensure(users.john);
-
+  test('ESS user logs in to the dashboard', async ({page, users}) => {
     // John logs in and lands on the dashboard
     const loginPage = new LoginPage(page);
     await loginPage.goto();
@@ -24,7 +23,7 @@ test.describe('Core - Login Page', () => {
     ).toHaveCount(0);
   });
 
-  test('login form validations should work', async ({page}) => {
+  test('empty login form shows required errors', async ({page}) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.loginButton.click();

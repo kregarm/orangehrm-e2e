@@ -17,11 +17,10 @@ test.describe('Recruitment - Hiring', () => {
     interviewDate: '2026-11-02',
   };
 
-  test.beforeAll(async ({db, api}) => {
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
     jobTitle = await api.jobTitles.create({title: 'Data Analyst'});
-    const admin = await api.users.findByUsername('Admin');
-    adminEmpNumber = admin!.employee.empNumber;
+    adminEmpNumber = await api.users.empNumberOf(users.admin);
     vacancy = await api.vacancies.create({
       name: 'Data Analyst - Ljubljana',
       jobTitleId: jobTitle.id,

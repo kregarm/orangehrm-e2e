@@ -8,5 +8,4 @@ export class EmployeeFilterPanel extends FilterPanel {
   readonly include = this.select('Include');
 
   readonly resetButton = this.button('Reset');
-  readonly searchButton = this.button('Search');
 }

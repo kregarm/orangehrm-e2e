@@ -1,7 +1,10 @@
 import {test, expect} from '../../../support/fixtures';
 import {EmployeeTimesheetsPage} from '../../../pages/time/employee-timesheets-page';
 import {MyTimesheetPage} from '../../../pages/time/my-timesheet-page';
+import type {Weekday} from '../../../pages/time/timesheet-view';
 import type {TimesheetActivity} from '../../../api/time/TimesheetsApiClass';
+
+const workWeek: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 // John logs time on Acme's Website project; his supervisor Mike approves it.
 // The submit test uses this week's timesheet, the approve test last week's.
@@ -45,12 +48,12 @@ test.describe('Time - Timesheets', () => {
     const row = editTimesheetPage.row(0);
     await row.project.pick('Website', project);
     await row.activity.choose(activity);
-    for (let day = 0; day < 5; day++) await row.hours(day).fill('8');
+    for (const day of workWeek) await (await row.hours(day)).fill('8');
     await editTimesheetPage.save();
 
     // The week totals 40 hours, and he submits it
     const logged = myTimesheetPage.row(project, activity);
-    await expect(myTimesheetPage.total(logged)).toHaveText('40:00');
+    await expect(await myTimesheetPage.total(logged)).toHaveText('40:00');
     await myTimesheetPage.submit();
   });
 
@@ -60,10 +63,11 @@ test.describe('Time - Timesheets', () => {
     api,
     users,
   }) => {
-    // John has submitted last week's timesheet, 8 hours a day
+    // John has submitted last week's timesheet, 8 hours a day. UTC, like
+    // the dates the API returns (and the app container's clock).
     const {timesheets} = api;
     const lastWeek = new Date();
-    lastWeek.setDate(lastWeek.getDate() - 7);
+    lastWeek.setUTCDate(lastWeek.getUTCDate() - 7);
     const timesheet = await timesheets.asUser('john', async () => {
       const created = await timesheets.create(
         lastWeek.toISOString().slice(0, 10),
@@ -84,7 +88,9 @@ test.describe('Time - Timesheets', () => {
     );
     await expect(employeeTimesheetPage.status).toHaveText('Status: Submitted');
     await expect(
-      employeeTimesheetPage.total(employeeTimesheetPage.row(project, activity)),
+      await employeeTimesheetPage.total(
+        employeeTimesheetPage.row(project, activity),
+      ),
     ).toHaveText('40:00');
     await employeeTimesheetPage.act('Approve', 'Looks good');
 

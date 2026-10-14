@@ -1,5 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {ClaimsListPage} from '../../../pages/claim/claims-list-page';
+import {EmployeeClaimsPage} from '../../../pages/claim/employee-claims-page';
+import {MyClaimsPage} from '../../../pages/claim/my-claims-page';
 import {SubmitClaimPage} from '../../../pages/claim/submit-claim-page';
 import type {
   ClaimEvent,
@@ -11,12 +12,13 @@ test.describe('Claim - Claims', () => {
 
   let conference: ClaimEvent;
   let travel: ExpenseType;
+  let accommodation: ExpenseType;
 
   test.beforeAll(async ({db, api, users}) => {
     await db.reset();
     conference = await api.claimConfig.createEvent('Conference');
     travel = await api.claimConfig.createExpenseType('Travel');
-    await api.claimConfig.createExpenseType('Accommodation');
+    accommodation = await api.claimConfig.createExpenseType('Accommodation');
     await api.users.ensure(users.john);
   });
 
@@ -39,7 +41,7 @@ test.describe('Claim - Claims', () => {
       note: 'Train tickets',
     });
     await claimPage.expenses.add({
-      type: 'Accommodation',
+      type: accommodation.name,
       date: '2026-10-06',
       amount: '180.00',
     });
@@ -52,7 +54,7 @@ test.describe('Claim - Claims', () => {
     await claimPage.submit();
 
     // Employee sees the claim as Submitted in My Claims
-    const myClaimsPage = new ClaimsListPage(page, 'claim/viewClaim');
+    const myClaimsPage = new MyClaimsPage(page);
     await myClaimsPage.goto();
     const row = myClaimsPage.row(referenceId);
     await expect(row).toContainText('Submitted');
@@ -83,10 +85,7 @@ test.describe('Claim - Claims', () => {
     });
 
     // Admin finds John's claim in Employee Claims
-    const employeeClaimsPage = new ClaimsListPage(
-      await pageAs('admin'),
-      'claim/viewAssignClaim',
-    );
+    const employeeClaimsPage = new EmployeeClaimsPage(await pageAs('admin'));
     await employeeClaimsPage.goto();
     await expect(employeeClaimsPage.row(referenceId)).toContainText(
       users.john.fullName,
@@ -104,7 +103,7 @@ test.describe('Claim - Claims', () => {
     await expect(reviewClaimPage.status.input).toHaveValue('Paid');
 
     // Employee sees the claim as Paid in My Claims
-    const myClaimsPage = new ClaimsListPage(page, 'claim/viewClaim');
+    const myClaimsPage = new MyClaimsPage(page);
     await myClaimsPage.goto();
     await expect(myClaimsPage.row(referenceId)).toContainText('Paid');
   });

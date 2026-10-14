@@ -51,12 +51,12 @@ test.describe('Recruitment - Vacancies', () => {
   test('unpublished vacancy is not on the public job board', async ({
     guestPage,
     api,
+    users,
   }) => {
     // Two active vacancies, only one of them published
-    const admin = await api.users.findByUsername('Admin');
     const vacancy = {
       jobTitleId: jobTitle.id,
-      employeeId: admin!.employee.empNumber,
+      employeeId: await api.users.empNumberOf(users.admin),
       status: true,
     };
     const published = await api.vacancies.create({

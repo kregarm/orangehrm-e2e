@@ -1,17 +1,16 @@
 import {type Page} from '@playwright/test';
 import {Table} from '../base-ui-elements/table';
-import {ReviewClaimPage} from './review-claim-page';
 
 /**
- * Claim > Employee Claims (claim/viewAssignClaim) or, for the employee,
- * My Claims (claim/viewClaim). Rows are found by reference id.
+ * A list of claims, found by reference id: the base of My Claims and
+ * Employee Claims, which open a claim on different pages
  */
 export class ClaimsListPage {
   readonly table: Table;
 
   constructor(
     readonly page: Page,
-    private readonly url: 'claim/viewAssignClaim' | 'claim/viewClaim',
+    private readonly url: string,
   ) {
     this.table = new Table(page);
   }
@@ -24,13 +23,10 @@ export class ClaimsListPage {
     return this.table.row(referenceId);
   }
 
-  /** Open a claim (View Details) to act on it */
-  async view(referenceId: string): Promise<ReviewClaimPage> {
-    await this.row(referenceId)
+  /** Click the claim's View Details; subclasses wait for the page it opens */
+  protected viewDetails(referenceId: string) {
+    return this.row(referenceId)
       .getByRole('button', {name: 'View Details'})
       .click();
-    const reviewClaimPage = new ReviewClaimPage(this.page);
-    await reviewClaimPage.loaded();
-    return reviewClaimPage;
   }
 }

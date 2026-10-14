@@ -31,7 +31,7 @@ export type Candidate = {
 let sequence = 0;
 
 /** Unique, valid values for the required fields */
-export const buildCandidate = (): Pick<
+const buildCandidate = (): Pick<
   CandidatePayload,
   'firstName' | 'lastName' | 'email'
 > => {
@@ -75,21 +75,6 @@ export class CandidatesApiClass extends BaseApiClass {
     const {data} = await this.post<ApiResponse<Candidate>>(
       CandidatesApiClass.path,
       compact({...buildCandidate(), ...fields}),
-    );
-    return data;
-  }
-
-  async getById(id: number): Promise<Candidate> {
-    const {data} = await this.get<ApiResponse<Candidate>>(
-      `${CandidatesApiClass.path}/${id}`,
-    );
-    return data;
-  }
-
-  async deleteByIds(ids: number[]): Promise<number[]> {
-    const {data} = await this.delete<ApiResponse<number[]>>(
-      CandidatesApiClass.path,
-      {ids},
     );
     return data;
   }

@@ -21,7 +21,7 @@ export class Form {
   /** The input group labelled `label`, for a field without a helper */
   group(label: string) {
     return this.root.locator('.oxd-input-group', {
-      has: this.page.locator('label', {hasText: new RegExp(`^${label}$`)}),
+      has: this.page.locator('label').getByText(label, {exact: true}),
     });
   }
 

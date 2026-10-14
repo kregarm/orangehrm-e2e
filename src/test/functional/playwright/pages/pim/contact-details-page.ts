@@ -18,7 +18,7 @@ export class ContactDetailsPage {
   readonly workEmail: TextField;
 
   readonly saveButton: Locator;
-  readonly savedToast: Locator;
+  private readonly savedToast: Locator;
 
   constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', {name: 'Contact Details'});

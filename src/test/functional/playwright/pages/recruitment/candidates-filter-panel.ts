@@ -4,10 +4,4 @@ import {FilterPanel} from '../base-ui-elements/filter-panel';
 export class CandidatesFilterPanel extends FilterPanel {
   readonly vacancy = this.select('Vacancy');
   readonly status = this.select('Status');
-
-  readonly searchButton = this.button('Search');
-
-  search() {
-    return this.searchButton.click();
-  }
 }

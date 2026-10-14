@@ -15,17 +15,17 @@ test.describe('Recruitment - Candidates', () => {
   // Applied to Frontend Engineer
   let frontendApplicant: Candidate;
 
-  test.beforeAll(async ({db, api}) => {
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
 
     // Two vacancies with applicants: two for Backend, one for Frontend
     const jobTitle = await api.jobTitles.create({title: 'Software Engineer'});
-    const admin = await api.users.findByUsername('Admin');
+    const adminEmpNumber = await api.users.empNumberOf(users.admin);
     const createVacancy = (name: string) =>
       api.vacancies.create({
         name,
         jobTitleId: jobTitle.id,
-        employeeId: admin!.employee.empNumber,
+        employeeId: adminEmpNumber,
         status: true,
         isPublished: true,
       });
@@ -48,12 +48,12 @@ test.describe('Recruitment - Candidates', () => {
     // Unfiltered: all three applicants
     const recruitmentPage = new RecruitmentPage(page);
     await recruitmentPage.goto();
-    await expect(recruitmentPage.rows).toHaveCount(3);
+    await expect(recruitmentPage.table.rows).toHaveCount(3);
 
     // Filtering by Backend Engineer leaves its two applicants
     await recruitmentPage.filters.vacancy.choose(backendVacancy.name);
     await recruitmentPage.filters.search();
-    await expect(recruitmentPage.rows).toHaveCount(2);
+    await expect(recruitmentPage.table.rows).toHaveCount(2);
     await expect(
       recruitmentPage.row(fullName(shortlistedBackendApplicant)),
     ).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Recruitment - Candidates', () => {
     // Also filtering by Shortlisted leaves just the shortlisted one
     await recruitmentPage.filters.status.choose('Shortlisted');
     await recruitmentPage.filters.search();
-    await expect(recruitmentPage.rows).toHaveCount(1);
+    await expect(recruitmentPage.table.rows).toHaveCount(1);
     await expect(
       recruitmentPage.row(fullName(shortlistedBackendApplicant)),
     ).toContainText('Shortlisted');

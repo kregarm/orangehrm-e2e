@@ -11,8 +11,9 @@ export class ApplyLeavePage {
   readonly form: Form;
 
   readonly leaveType: SelectField;
-  readonly fromDate: TextField;
-  readonly toDate: TextField;
+  // Filled through dates(), which handles their interplay
+  private readonly fromDate: TextField;
+  private readonly toDate: TextField;
   readonly comments: TextField;
   /** e.g. "10.00 Day(s)"; loads after a leave type is chosen */
   readonly balance: Locator;

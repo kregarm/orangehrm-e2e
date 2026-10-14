@@ -1,15 +1,21 @@
 import {type Locator, type Page} from '@playwright/test';
 import {AutocompleteField, SelectField, TextField} from './base-ui-elements';
 
-/** An oxd-form whose fields are located by their label */
+/**
+ * An oxd-form whose fields are located by their label. The root defaults to
+ * the page's form.oxd-form, as most pages have one.
+ */
 export class Form {
   readonly actions: Locator;
+  /** The spinner shown while the form loads or saves */
+  readonly loader: Locator;
 
   constructor(
     readonly page: Page,
-    readonly root: Locator,
+    readonly root: Locator = page.locator('form.oxd-form'),
   ) {
     this.actions = this.root.locator('.oxd-form-actions');
+    this.loader = this.root.locator('.oxd-form-loader');
   }
 
   protected group(label: string) {

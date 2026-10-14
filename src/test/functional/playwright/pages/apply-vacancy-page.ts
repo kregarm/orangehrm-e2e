@@ -24,7 +24,7 @@ export class ApplyVacancyPage extends Form {
   readonly confirmation: Locator;
 
   constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
+    super(page);
     this.resume = this.group('Resume').locator('input[type="file"]');
     this.confirmation = page.getByRole('dialog');
   }

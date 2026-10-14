@@ -20,10 +20,6 @@ export class SubmitClaimPage extends Form {
 
   readonly createButton = this.button('Create');
 
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
-
   goto() {
     return this.page.goto('claim/submitClaim');
   }

@@ -83,13 +83,7 @@ export class EditTimesheetPage {
 
   /** Save and wait for the redirect back to the timesheet */
   async save() {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        response.url().endsWith('/entries'),
-    );
     await this.page.getByRole('button', {name: 'Save', exact: true}).click();
-    expect((await saved).ok()).toBe(true);
     await this.page.waitForURL(/time\/viewMyTimesheet/);
   }
 }

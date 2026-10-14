@@ -1,4 +1,4 @@
-import {expect, type Page} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {Form} from './base-ui-elements/form';
 
 /** PIM / My Info > Contact Details (pim/contactDetails/empNumber/{n}) */
@@ -16,10 +16,9 @@ export class ContactDetailsPage extends Form {
   readonly otherEmail = this.text('Other Email');
 
   readonly saveButton = this.button('Save');
-
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
+  readonly savedToast = this.page
+    .locator('.oxd-toast--success')
+    .filter({hasText: 'Successfully Updated'});
 
   /** Open the page and wait for the saved details to be filled in */
   async goto(empNumber: number) {
@@ -33,12 +32,7 @@ export class ContactDetailsPage extends Form {
   }
 
   async save() {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        response.url().endsWith('/contact-details'),
-    );
     await this.saveButton.click();
-    expect((await saved).ok()).toBe(true);
+    await expect(this.savedToast).toBeVisible();
   }
 }

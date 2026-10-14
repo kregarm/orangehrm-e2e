@@ -1,4 +1,3 @@
-import {type Page} from '@playwright/test';
 import {SwitchField} from './base-ui-elements/base-ui-elements';
 import {Form} from './base-ui-elements/form';
 
@@ -13,10 +12,6 @@ export class AddVacancyPage extends Form {
   readonly published = this.switch('Publish in RSS Feed and Web Page');
 
   readonly saveButton = this.button('Save');
-
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
 
   // The switches have no oxd label, just a text next to them
   private switch(text: string) {

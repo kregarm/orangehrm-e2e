@@ -13,7 +13,7 @@ export class ApplyLeavePage extends Form {
   readonly applyButton = this.button('Apply');
 
   constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
+    super(page);
     this.balance = this.root.locator('.orangehrm-leave-balance-text');
   }
 

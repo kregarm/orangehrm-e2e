@@ -1,4 +1,3 @@
-import {type Page} from '@playwright/test';
 import {Form} from './base-ui-elements/form';
 import type {Credentials} from '../api/BaseApiClass';
 
@@ -8,10 +7,8 @@ export class LoginPage extends Form {
   readonly password = this.text('Password');
 
   readonly loginButton = this.button('Login');
-
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
+  /** The error above the form, e.g. "Invalid credentials" */
+  readonly alert = this.page.getByRole('alert');
 
   goto() {
     return this.page.goto('auth/login');

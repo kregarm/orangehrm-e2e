@@ -59,10 +59,6 @@ export class CandidateActionForm extends Form {
 
   readonly saveButton = this.button('Save');
 
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
-
   /** Save and wait for the redirect back to the candidate */
   async save() {
     await this.saveButton.click();

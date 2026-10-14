@@ -1,4 +1,4 @@
-import {type Page} from '@playwright/test';
+import {type Locator, type Page} from '@playwright/test';
 import {FilterPanel} from './base-ui-elements/filter-panel';
 import {Table} from './base-ui-elements/table';
 
@@ -17,10 +17,15 @@ export class EmployeeFilterPanel extends FilterPanel {
 export class EmployeeListPage {
   readonly filters: EmployeeFilterPanel;
   readonly table: Table;
+  /** "No Records Found", shown when a search finds nobody */
+  readonly noRecordsFound: Locator;
 
   constructor(readonly page: Page) {
     this.filters = new EmployeeFilterPanel(page);
     this.table = new Table(page);
+    this.noRecordsFound = page
+      .locator('.oxd-toast--info')
+      .filter({hasText: 'No Records Found'});
   }
 
   /** The row showing `firstName` and `lastName` in their own columns */
@@ -28,17 +33,24 @@ export class EmployeeListPage {
     return this.table.row(firstName, lastName);
   }
 
-  goto() {
-    return this.page.goto('pim/viewEmployeeList');
+  /** Wait for the initial list, so a later search waits for its own results */
+  async goto() {
+    const loaded = this.listLoaded();
+    await this.page.goto('pim/viewEmployeeList');
+    await loaded;
   }
 
   /** Search and wait for the results, so an absent row is meaningful */
   async search() {
-    const loaded = this.page.waitForResponse(
+    const loaded = this.listLoaded();
+    await this.filters.searchButton.click();
+    await loaded;
+  }
+
+  private listLoaded() {
+    return this.page.waitForResponse(
       (response) =>
         response.url().includes('/api/v2/pim/employees?') && response.ok(),
     );
-    await this.filters.searchButton.click();
-    await loaded;
   }
 }

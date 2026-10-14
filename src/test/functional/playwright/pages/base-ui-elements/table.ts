@@ -19,4 +19,15 @@ export class Table {
       this.rows,
     );
   }
+
+  /** The cell of `row` in the column headed `column`, e.g. "Status" */
+  async cell(row: Locator, column: string) {
+    const headers = this.root.getByRole('columnheader');
+    await headers.first().waitFor();
+    const index = (await headers.allInnerTexts()).findIndex(
+      (text) => text.trim() === column,
+    );
+    if (index < 0) throw new Error(`The table has no "${column}" column`);
+    return row.getByRole('cell').nth(index);
+  }
 }

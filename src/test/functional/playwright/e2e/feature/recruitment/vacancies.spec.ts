@@ -60,16 +60,27 @@ test.describe('Recruitment - Vacancies', () => {
     api,
   }) => {
     const admin = await api.users.findByUsername('Admin');
-    const vacancy = await api.vacancies.create({
-      name: 'Internal QA Engineer',
+    const vacancy = {
       jobTitleId: jobTitle.id,
       employeeId: admin!.employee.empNumber,
       status: true,
+    };
+    const published = await api.vacancies.create({
+      ...vacancy,
+      name: 'Public QA Engineer',
+      isPublished: true,
+    });
+    const unpublished = await api.vacancies.create({
+      ...vacancy,
+      name: 'Internal QA Engineer',
       isPublished: false,
     });
 
     const publicJobsPage = new PublicJobsPage(guestPage);
     await publicJobsPage.goto();
-    await expect(publicJobsPage.card(vacancy.name)).toHaveCount(0);
+    // The cards render after the response, so an absent card only means
+    // something once a published one is shown
+    await expect(publicJobsPage.card(published.name)).toHaveCount(1);
+    await expect(publicJobsPage.card(unpublished.name)).toHaveCount(0);
   });
 });

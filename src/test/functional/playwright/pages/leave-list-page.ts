@@ -1,5 +1,6 @@
 import {expect, type Locator, type Page} from '@playwright/test';
 import {Table} from './base-ui-elements/table';
+import type {LeavePeriod} from '../api/leave/LeavePeriodsApiClass';
 
 /**
  * Leave > Leave List (leave/viewLeaveList): the leave of the employees the
@@ -16,8 +17,11 @@ export class LeaveListPage {
     this.table = new Table(page);
   }
 
-  /** Wait for the list request so an absent row is meaningful */
-  async goto() {
+  /**
+   * Wait for the list request so an absent row is meaningful. `range`
+   * replaces the default current leave period, e.g. with the next one.
+   */
+  async goto(range?: LeavePeriod) {
     const loaded = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'GET' &&
@@ -26,7 +30,10 @@ export class LeaveListPage {
         ) &&
         response.ok(),
     );
-    await this.page.goto(this.url);
+    const query = range
+      ? `?${new URLSearchParams({fromDate: range.startDate, toDate: range.endDate})}`
+      : '';
+    await this.page.goto(`${this.url}${query}`);
     await loaded;
   }
 

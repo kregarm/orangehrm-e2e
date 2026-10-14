@@ -48,6 +48,8 @@ test.describe('PIM - Employee List', () => {
     await employeeListPage.goto();
     await employeeListPage.filters.employeeId.fill(past.employeeId);
     await employeeListPage.search();
+    // Rows are also absent before the results render, so check the toast
+    await expect(employeeListPage.noRecordsFound).toBeVisible();
     await expect(employeeListPage.table.rows).toHaveCount(0);
 
     await employeeListPage.filters.include.choose('Current and Past Employees');

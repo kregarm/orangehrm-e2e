@@ -1,4 +1,3 @@
-import {type Page} from '@playwright/test';
 import {SwitchField} from './base-ui-elements/base-ui-elements';
 import {Form} from './base-ui-elements/form';
 
@@ -19,10 +18,6 @@ export class AddEmployeePage extends Form {
   readonly confirmPassword = this.text('Confirm Password');
 
   readonly saveButton = this.button('Save');
-
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
 
   /** Enabled or Disabled login */
   status(status: 'Enabled' | 'Disabled') {

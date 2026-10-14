@@ -11,10 +11,6 @@ export class AddReviewPage extends Form {
   readonly endDate = this.text('Review Period End Date');
   readonly dueDate = this.text('Due Date');
 
-  constructor(page: Page) {
-    super(page, page.locator('form.oxd-form'));
-  }
-
   goto() {
     return this.page.goto('performance/saveReview');
   }

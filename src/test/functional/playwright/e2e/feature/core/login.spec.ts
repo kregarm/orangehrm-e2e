@@ -57,7 +57,7 @@ test.describe('Core - Login Page', () => {
       password: 'Wrong@OHRM123',
     });
 
-    await expect(page.getByRole('alert')).toContainText('Invalid credentials');
+    await expect(loginPage.alert).toContainText('Invalid credentials');
     await expect(page).toHaveURL(/auth\/login/);
   });
 });

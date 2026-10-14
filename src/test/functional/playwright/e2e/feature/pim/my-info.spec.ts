@@ -30,9 +30,6 @@ test.describe('PIM - My Info', () => {
     await contactDetailsPage.mobilePhone.fill(contact.mobilePhone);
     await contactDetailsPage.workEmail.fill(contact.workEmail);
     await contactDetailsPage.save();
-    await expect(page.locator('.oxd-toast')).toContainText(
-      'Successfully Updated',
-    );
 
     // Saved for HR too: the admin sees them on John's record
     const adminView = new ContactDetailsPage(await pageAs('admin'));

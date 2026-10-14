@@ -10,7 +10,9 @@ test.describe('Performance - Reviews', () => {
   test.use({loginAs: 'admin'});
 
   const kpis = ['Test coverage', 'Defects found before release'];
-  const period = {startDate: '2026-01-01', endDate: '2026-06-30'};
+  // The review lists default to the current year, so review in it
+  const year = new Date().getFullYear();
+  const period = {startDate: `${year}-01-01`, endDate: `${year}-06-30`};
   const periodText = `${period.startDate} - ${period.endDate}`;
 
   test.beforeAll(async ({db, api, users}) => {
@@ -46,7 +48,7 @@ test.describe('Performance - Reviews', () => {
     );
     await addReviewPage.startDate.fill(period.startDate);
     await addReviewPage.endDate.fill(period.endDate);
-    await addReviewPage.dueDate.fill('2026-12-31');
+    await addReviewPage.dueDate.fill(`${year}-12-31`);
     await addReviewPage.activate();
 
     const myReviews = new ReviewListPage(
@@ -74,7 +76,7 @@ test.describe('Performance - Reviews', () => {
     await evaluation.kpi(kpis[0]).rating.fill('5');
     await evaluation.kpi(kpis[1]).rating.fill('4');
     await evaluation.generalComment.fill('Raised the bar for quality');
-    await evaluation.finalization('Date of Completion').fill('2026-07-15');
+    await evaluation.finalization('Date of Completion').fill(`${year}-07-15`);
     await evaluation.finalization('Final Rating').fill('4.5');
     await evaluation
       .finalization('Final Comments')

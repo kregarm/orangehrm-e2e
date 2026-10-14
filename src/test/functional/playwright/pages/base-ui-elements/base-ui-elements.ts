@@ -2,8 +2,14 @@ import {expect, type Locator, type Page} from '@playwright/test';
 
 export class TextField {
   constructor(readonly root: Locator) {}
+
+  /** The input or textarea, e.g. to assert a read-only field's value */
+  get input(): Locator {
+    return this.root.locator('input, textarea');
+  }
+
   fill(value: string) {
-    return this.root.locator('input, textarea').fill(value);
+    return this.input.fill(value);
   }
 }
 

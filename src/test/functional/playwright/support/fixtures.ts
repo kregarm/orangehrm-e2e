@@ -15,6 +15,11 @@ import {LeavePeriodsApiClass} from '../api/leave/LeavePeriodsApiClass';
 import {LeaveTypesApiClass} from '../api/leave/LeaveTypesApiClass';
 import {LeaveEntitlementsApiClass} from '../api/leave/LeaveEntitlementsApiClass';
 import {LeaveRequestsApiClass} from '../api/leave/LeaveRequestsApiClass';
+import {TimesheetPeriodApiClass} from '../api/time/TimesheetPeriodApiClass';
+import {CustomersApiClass} from '../api/time/CustomersApiClass';
+import {ProjectsApiClass} from '../api/time/ProjectsApiClass';
+import {ClaimConfigApiClass} from '../api/claim/ClaimConfigApiClass';
+import {KpisApiClass} from '../api/performance/KpisApiClass';
 import {users, type UserKey} from '../data/users';
 
 /**
@@ -47,6 +52,11 @@ type Api = {
   leaveTypes: LeaveTypesApiClass;
   leaveEntitlements: LeaveEntitlementsApiClass;
   leaveRequests: LeaveRequestsApiClass;
+  timesheetPeriod: TimesheetPeriodApiClass;
+  customers: CustomersApiClass;
+  projects: ProjectsApiClass;
+  claimConfig: ClaimConfigApiClass;
+  kpis: KpisApiClass;
 };
 
 export const test = base.extend<
@@ -115,6 +125,11 @@ export const test = base.extend<
         leaveTypes: new LeaveTypesApiClass(session),
         leaveEntitlements: new LeaveEntitlementsApiClass(session),
         leaveRequests: new LeaveRequestsApiClass(session),
+        timesheetPeriod: new TimesheetPeriodApiClass(session),
+        customers: new CustomersApiClass(session),
+        projects: new ProjectsApiClass(session),
+        claimConfig: new ClaimConfigApiClass(session),
+        kpis: new KpisApiClass(session),
       });
       await session.logout();
     },

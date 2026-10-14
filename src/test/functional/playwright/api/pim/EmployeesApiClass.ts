@@ -93,4 +93,11 @@ export class EmployeesApiClass extends BaseApiClass {
       note: null,
     });
   }
+
+  /** Set the employee's job title (PIM > Job) */
+  async setJobTitle(empNumber: number, jobTitleId: number): Promise<void> {
+    await this.put(`${EmployeesApiClass.path}/${empNumber}/job-details`, {
+      jobTitleId,
+    });
+  }
 }

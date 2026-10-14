@@ -1,20 +1,27 @@
 import {type Locator, type Page} from '@playwright/test';
 import {AutocompleteField, SelectField, TextField} from './base-ui-elements';
 
-/** An oxd-form whose fields are located by their label */
+/**
+ * An oxd-form whose fields are located by their label. The root defaults to
+ * the page's form.oxd-form, as most pages have one.
+ */
 export class Form {
   readonly actions: Locator;
+  /** The spinner shown while the form loads or saves */
+  readonly loader: Locator;
 
   constructor(
     readonly page: Page,
-    readonly root: Locator,
+    readonly root: Locator = page.locator('form.oxd-form'),
   ) {
     this.actions = this.root.locator('.oxd-form-actions');
+    this.loader = this.root.locator('.oxd-form-loader');
   }
 
-  protected group(label: string) {
+  /** The input group labelled `label`, for a field without a helper */
+  group(label: string) {
     return this.root.locator('.oxd-input-group', {
-      has: this.page.locator('label', {hasText: new RegExp(`^${label}$`)}),
+      has: this.page.locator('label').getByText(label, {exact: true}),
     });
   }
 
@@ -24,6 +31,19 @@ export class Form {
 
   select(label: string) {
     return new SelectField(this.group(label), this.page);
+  }
+
+  /**
+   * A field without a label of its own, by its input's placeholder, e.g. the
+   * First/Middle/Last Name inputs grouped under one "Full Name" label. The
+   * innermost group is used, as the label's group contains the others.
+   */
+  placeholder(placeholder: string) {
+    return new TextField(
+      this.root.locator('.oxd-input-group:not(:has(.oxd-input-group))', {
+        has: this.page.getByPlaceholder(placeholder, {exact: true}),
+      }),
+    );
   }
 
   autocomplete(label: string) {

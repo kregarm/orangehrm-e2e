@@ -1,55 +1,49 @@
-import type {Page} from '@playwright/test';
 import {test, expect} from '../../../support/fixtures';
-import type {User} from '../../../data/users';
-
-const inputGroup = (page: Page, label: string) =>
-  page.locator('.oxd-input-group').filter({hasText: label});
-
-/** Log in through the form and assert the redirect to the dashboard */
-const login = async (page: Page, user: User) => {
-  await page.goto('auth/login');
-  await inputGroup(page, 'Username').locator('input').fill(user.username);
-  await inputGroup(page, 'Password').locator('input').fill(user.password);
-
-  const loginResponse = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().endsWith('/auth/validate'),
-  );
-  await page.getByRole('button', {name: 'Login'}).click();
-
-  expect((await loginResponse).headers().location).toMatch(/dashboard\/index/);
-  await expect(page).toHaveURL(/dashboard\/index/);
-};
+import {LoginPage} from '../../../pages/core/login-page';
+import {DashboardPage} from '../../../pages/core/dashboard-page';
 
 test.describe('Core - Login Page', () => {
-  test.beforeAll(async ({db}) => {
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
-  });
-
-  test('should login as admin', async ({page, users}) => {
-    await login(page, users.admin);
-  });
-
-  test('should login as an ESS user', async ({page, users, api}) => {
     await api.users.ensure(users.john);
-    await login(page, users.john);
+  });
 
-    await expect(page.getByText(users.john.fullName)).toBeVisible();
-    const menu = page.getByRole('navigation');
+  test('ESS user logs in to the dashboard', async ({page, users}) => {
+    // John logs in and lands on the dashboard
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login(users.john);
+    const dashboardPage = new DashboardPage(page);
+    await expect(dashboardPage.heading).toBeVisible();
+
+    // He sees his name and the ESS menu, without Admin
+    await expect(dashboardPage.topBar.userDropdown).toContainText(
+      users.john.fullName,
+    );
+    const {menu} = dashboardPage;
     await expect(menu.getByRole('link', {name: 'My Info'})).toBeVisible();
     await expect(
       menu.getByRole('link', {name: 'Admin', exact: true}),
     ).toHaveCount(0);
-
-    await page.pause();
   });
 
-  test('login form validations should work', async ({page}) => {
-    await page.goto('auth/login');
-    await page.getByRole('button', {name: 'Login'}).click();
+  test('empty login form shows required errors', async ({page}) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.loginButton.click();
 
-    await expect(inputGroup(page, 'Username')).toContainText('Required');
-    await expect(inputGroup(page, 'Password')).toContainText('Required');
+    await expect(loginPage.username.root).toContainText('Required');
+    await expect(loginPage.password.root).toContainText('Required');
+  });
+
+  test('wrong password is rejected', async ({page, users}) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login({
+      username: users.admin.username,
+      password: 'Wrong@OHRM123',
+    });
+
+    await expect(loginPage.alert).toContainText('Invalid credentials');
   });
 });

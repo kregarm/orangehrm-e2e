@@ -1,20 +1,3 @@
-/**
- * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
- * all the essential functionalities required for any enterprise.
- * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
- *
- * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
- *
- * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with OrangeHRM.
- * If not, see <https://www.gnu.org/licenses/>.
- */
-
 import {BaseApiClass, compact, type ApiResponse} from '../BaseApiClass';
 
 /**
@@ -42,10 +25,7 @@ export type Employee = {
 let sequence = 0;
 
 /** Unique, valid values for the required fields */
-export const buildEmployee = (): Pick<
-  EmployeePayload,
-  'firstName' | 'lastName'
-> => ({
+const buildEmployee = (): Pick<EmployeePayload, 'firstName' | 'lastName'> => ({
   firstName: 'Test',
   lastName: `Employee ${Date.now().toString(36)}${(sequence++).toString(36)}`,
 });
@@ -62,18 +42,52 @@ export class EmployeesApiClass extends BaseApiClass {
     return data;
   }
 
-  async getById(empNumber: number): Promise<Employee> {
-    const {data} = await this.get<ApiResponse<Employee>>(
-      `${EmployeesApiClass.path}/${empNumber}`,
-    );
-    return data;
-  }
-
   async deleteByIds(empNumbers: number[]): Promise<number[]> {
     const {data} = await this.delete<ApiResponse<number[]>>(
       EmployeesApiClass.path,
       {ids: empNumbers},
     );
     return data;
+  }
+
+  /**
+   * Make `supervisorEmpNumber` a supervisor of `empNumber` (PIM > Report-to).
+   * A supervisor with a login gains the Supervisor role, e.g. approving the
+   * subordinate's leave. Reporting methods: 1 Direct, 2 Indirect.
+   */
+  async addSupervisor(
+    empNumber: number,
+    supervisorEmpNumber: number,
+    reportingMethodId = 1,
+  ): Promise<void> {
+    await this.post(`${EmployeesApiClass.path}/${empNumber}/supervisors`, {
+      empNumber: supervisorEmpNumber,
+      reportingMethodId,
+    });
+  }
+
+  /**
+   * Terminate `empNumber`, making them a past employee. Reasons are seeded
+   * by the installer, e.g. 6 Resigned (see /api/v2/pim/termination-reasons).
+   */
+  async terminate(
+    empNumber: number,
+    {
+      date,
+      terminationReasonId = 6,
+    }: {date: string; terminationReasonId?: number},
+  ): Promise<void> {
+    await this.post(`${EmployeesApiClass.path}/${empNumber}/terminations`, {
+      terminationReasonId,
+      date,
+      note: null,
+    });
+  }
+
+  /** Set the employee's job title (PIM > Job) */
+  async setJobTitle(empNumber: number, jobTitleId: number): Promise<void> {
+    await this.put(`${EmployeesApiClass.path}/${empNumber}/job-details`, {
+      jobTitleId,
+    });
   }
 }

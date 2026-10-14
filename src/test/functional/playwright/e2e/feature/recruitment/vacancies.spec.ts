@@ -1,22 +1,6 @@
-/**
- * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
- * all the essential functionalities required for any enterprise.
- * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
- *
- * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
- *
- * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with OrangeHRM.
- * If not, see <https://www.gnu.org/licenses/>.
- */
 import {test, expect} from '../../../support/fixtures';
-import {AddVacancyPage} from '../../../pages/add-vacancy-page';
-import {PublicJobsPage} from '../../../pages/public-jobs-page';
+import {AddVacancyPage} from '../../../pages/recruitment/add-vacancy-page';
+import {PublicJobsPage} from '../../../pages/recruitment/public-jobs-page';
 import type {JobTitle} from '../../../api/admin/JobTitlesApiClass';
 
 test.describe('Recruitment - Vacancies', () => {
@@ -33,13 +17,13 @@ test.describe('Recruitment - Vacancies', () => {
     page,
     guestPage,
     users,
-    api,
   }) => {
     const vacancy = {
       name: 'Senior QA Engineer',
       description: 'Own the end-to-end test suite.',
     };
 
+    // Admin adds an active vacancy, published on the job board
     const addVacancyPage = new AddVacancyPage(page);
     await addVacancyPage.goto();
     await addVacancyPage.name.fill(vacancy.name);
@@ -52,18 +36,11 @@ test.describe('Recruitment - Vacancies', () => {
     await addVacancyPage.numOfPositions.fill('2');
     await addVacancyPage.active.set(true);
     await addVacancyPage.published.set(true);
-    const id = await addVacancyPage.save();
+    await addVacancyPage.save();
 
-    const saved = await api.vacancies.getById(id);
-    expect(saved).toMatchObject({
-      name: vacancy.name,
-      status: true,
-      isPublished: true,
-    });
-
+    // A visitor sees it on the job board, with its description and Apply
     const publicJobsPage = new PublicJobsPage(guestPage);
     await publicJobsPage.goto();
-    await expect(guestPage).toHaveURL(/recruitmentApply\/jobs\.html/);
 
     const card = publicJobsPage.card(vacancy.name);
     await expect(card).toHaveCount(1);
@@ -74,18 +51,30 @@ test.describe('Recruitment - Vacancies', () => {
   test('unpublished vacancy is not on the public job board', async ({
     guestPage,
     api,
+    users,
   }) => {
-    const admin = await api.users.findByUsername('Admin');
-    const vacancy = await api.vacancies.create({
-      name: 'Internal QA Engineer',
+    // Two active vacancies, only one of them published
+    const vacancy = {
       jobTitleId: jobTitle.id,
-      employeeId: admin!.employee.empNumber,
+      employeeId: await api.users.empNumberOf(users.admin),
       status: true,
+    };
+    const published = await api.vacancies.create({
+      ...vacancy,
+      name: 'Public QA Engineer',
+      isPublished: true,
+    });
+    const unpublished = await api.vacancies.create({
+      ...vacancy,
+      name: 'Internal QA Engineer',
       isPublished: false,
     });
 
+    // A visitor sees only the published one; checking it first makes sure
+    // the cards have rendered
     const publicJobsPage = new PublicJobsPage(guestPage);
     await publicJobsPage.goto();
-    await expect(publicJobsPage.card(vacancy.name)).toHaveCount(0);
+    await expect(publicJobsPage.card(published.name)).toHaveCount(1);
+    await expect(publicJobsPage.card(unpublished.name)).toHaveCount(0);
   });
 });

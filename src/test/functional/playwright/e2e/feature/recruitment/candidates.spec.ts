@@ -1,37 +1,75 @@
-/**
- * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
- * all the essential functionalities required for any enterprise.
- * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
- *
- * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
- *
- * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with OrangeHRM.
- * If not, see <https://www.gnu.org/licenses/>.
- */
 import {test, expect} from '../../../support/fixtures';
-import {RecruitmentPage} from '../../../pages/recruitment-page';
-import {candidates, fullName} from '../../../data/candidates';
+import {RecruitmentPage} from '../../../pages/recruitment/recruitment-page';
+import {fullName} from '../../../data/candidates';
+import type {Candidate} from '../../../api/recruitment/CandidatesApiClass';
+import type {Vacancy} from '../../../api/recruitment/VacanciesApiClass';
 
 test.describe('Recruitment - Candidates', () => {
   test.use({loginAs: 'admin'});
 
-  test.beforeAll(async ({db, api}) => {
+  let backendVacancy: Vacancy;
+  // Applied to Backend Engineer and shortlisted
+  let shortlistedBackendApplicant: Candidate;
+  // Applied to Backend Engineer, not yet reviewed
+  let newBackendApplicant: Candidate;
+  // Applied to Frontend Engineer
+  let frontendApplicant: Candidate;
+
+  test.beforeAll(async ({db, api, users}) => {
     await db.reset();
-    await api.candidates.create(candidates.jane);
+
+    // Two vacancies with applicants: two for Backend, one for Frontend
+    const jobTitle = await api.jobTitles.create({title: 'Software Engineer'});
+    const adminEmpNumber = await api.users.empNumberOf(users.admin);
+    const createVacancy = (name: string) =>
+      api.vacancies.create({
+        name,
+        jobTitleId: jobTitle.id,
+        employeeId: adminEmpNumber,
+        status: true,
+        isPublished: true,
+      });
+    backendVacancy = await createVacancy('Backend Engineer');
+    const frontendVacancy = await createVacancy('Frontend Engineer');
+
+    shortlistedBackendApplicant = await api.candidates.create({
+      vacancyId: backendVacancy.id,
+    });
+    await api.candidates.shortlist(shortlistedBackendApplicant.id);
+    newBackendApplicant = await api.candidates.create({
+      vacancyId: backendVacancy.id,
+    });
+    frontendApplicant = await api.candidates.create({
+      vacancyId: frontendVacancy.id,
+    });
   });
 
-  test('candidate created via the API is listed', async ({page}) => {
-    const recruitment = new RecruitmentPage(page);
-    await recruitment.goto();
+  test('candidates can be filtered by vacancy and status', async ({page}) => {
+    // Unfiltered: all three applicants
+    const recruitmentPage = new RecruitmentPage(page);
+    await recruitmentPage.goto();
+    await expect(recruitmentPage.table.rows).toHaveCount(3);
 
-    const row = recruitment.row(fullName(candidates.jane));
-    await expect(row).toHaveCount(1);
-    await expect(row).toContainText(candidates.jane.dateOfApplication);
+    // Filtering by Backend Engineer leaves its two applicants
+    await recruitmentPage.filters.vacancy.choose(backendVacancy.name);
+    await recruitmentPage.filters.search();
+    await expect(recruitmentPage.table.rows).toHaveCount(2);
+    await expect(
+      recruitmentPage.row(fullName(shortlistedBackendApplicant)),
+    ).toBeVisible();
+    await expect(
+      recruitmentPage.row(fullName(newBackendApplicant)),
+    ).toBeVisible();
+    await expect(recruitmentPage.row(fullName(frontendApplicant))).toHaveCount(
+      0,
+    );
+
+    // Also filtering by Shortlisted leaves just the shortlisted one
+    await recruitmentPage.filters.status.choose('Shortlisted');
+    await recruitmentPage.filters.search();
+    await expect(recruitmentPage.table.rows).toHaveCount(1);
+    await expect(
+      recruitmentPage.row(fullName(shortlistedBackendApplicant)),
+    ).toContainText('Shortlisted');
   });
 });

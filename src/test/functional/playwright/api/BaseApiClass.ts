@@ -1,20 +1,3 @@
-/**
- * OrangeHRM is a comprehensive Human Resource Management (HRM) System that captures
- * all the essential functionalities required for any enterprise.
- * Copyright (C) 2006 OrangeHRM Inc., http://www.orangehrm.com
- *
- * OrangeHRM is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
- *
- * OrangeHRM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with OrangeHRM.
- * If not, see <https://www.gnu.org/licenses/>.
- */
-
 import type {
   APIRequest,
   APIRequestContext,
@@ -41,10 +24,7 @@ export type ApiResponse<T, M = Record<string, unknown>> = {
   rels: unknown[];
 };
 
-/**
- * Thrown for any non-2xx response. `invalidParams` lists the offending keys
- * of a 422 so assertions can target them directly.
- */
+/** Thrown for any non-2xx response */
 export class ApiError extends Error {
   constructor(
     readonly method: string,
@@ -61,13 +41,6 @@ export class ApiError extends Error {
       {cause},
     );
     this.name = 'ApiError';
-  }
-
-  get invalidParams(): string[] {
-    const error = (
-      this.body as {error?: {data?: {invalidParamKeys?: string[]}}}
-    )?.error;
-    return error?.data?.invalidParamKeys ?? [];
   }
 
   private static describe(body: unknown, cause: unknown): string {
@@ -107,14 +80,10 @@ export class ApiSession {
     private readonly baseURL: string,
   ) {}
 
-  get user(): string | undefined {
-    return this.current?.username;
-  }
-
   /** Authenticate as `user` (reusing an existing session) and make it current */
-  async loginAs(user: UserRef, {force = false} = {}): Promise<void> {
+  async loginAs(user: UserRef): Promise<void> {
     const credentials = resolveCredentials(user);
-    if (force || !this.contexts.has(credentials.username)) {
+    if (!this.contexts.has(credentials.username)) {
       await this.authenticate(credentials);
     }
     this.current = credentials;
@@ -134,11 +103,16 @@ export class ApiSession {
   /**
    * Cookies of `user`'s session, to skip the UI login in a browser context:
    * `browser.newContext({storageState: await api.session.storageState('admin')})`
+   *
+   * Always logs in afresh: a cached session may already be dead without any
+   * request having noticed, e.g. when the user was recreated by a db.reset()
+   * (the server expires sessions of users modified since they logged in). A
+   * browser page would then land on the login page instead of retrying.
    */
   async storageState(user: UserRef) {
-    const {username} = resolveCredentials(user);
-    await this.asUser(user, async () => undefined);
-    return this.contexts.get(username)!.storageState();
+    const credentials = resolveCredentials(user);
+    await this.authenticate(credentials);
+    return this.contexts.get(credentials.username)!.storageState();
   }
 
   /** Dispose all sessions; the next request is anonymous until loginAs */
@@ -192,6 +166,10 @@ export class ApiSession {
       context = await this.apiRequest.newContext({
         baseURL: this.baseURL,
         extraHTTPHeaders: {Accept: 'application/json'},
+        // Inside a test, new contexts default to the test's storageState,
+        // i.e. the `loginAs` user's cookies; logging in another user on
+        // them would switch that user's session (and browser page) over.
+        storageState: {cookies: [], origins: []},
       });
       this.contexts.set(key, context);
     }
@@ -240,14 +218,6 @@ export class ApiSession {
  */
 export class BaseApiClass {
   constructor(protected readonly session: ApiSession) {}
-
-  get user(): string | undefined {
-    return this.session.user;
-  }
-
-  loginAs(user: UserRef, options?: {force?: boolean}): Promise<void> {
-    return this.session.loginAs(user, options);
-  }
 
   asUser<T>(user: UserRef, fn: () => Promise<T>): Promise<T> {
     return this.session.asUser(user, fn);

@@ -19,6 +19,7 @@ import {TimesheetPeriodApiClass} from '../api/time/TimesheetPeriodApiClass';
 import {CustomersApiClass} from '../api/time/CustomersApiClass';
 import {ProjectsApiClass} from '../api/time/ProjectsApiClass';
 import {ClaimConfigApiClass} from '../api/claim/ClaimConfigApiClass';
+import {ClaimRequestsApiClass} from '../api/claim/ClaimRequestsApiClass';
 import {KpisApiClass} from '../api/performance/KpisApiClass';
 import {users, type UserKey} from '../data/users';
 
@@ -56,6 +57,7 @@ type Api = {
   customers: CustomersApiClass;
   projects: ProjectsApiClass;
   claimConfig: ClaimConfigApiClass;
+  claimRequests: ClaimRequestsApiClass;
   kpis: KpisApiClass;
 };
 
@@ -129,6 +131,7 @@ export const test = base.extend<
         customers: new CustomersApiClass(session),
         projects: new ProjectsApiClass(session),
         claimConfig: new ClaimConfigApiClass(session),
+        claimRequests: new ClaimRequestsApiClass(session),
         kpis: new KpisApiClass(session),
       });
       await session.logout();

@@ -17,14 +17,11 @@ export class PublicJobsPage {
     });
   }
 
-  /** Wait for the vacancy list request so an absent card is meaningful */
-  async goto() {
-    const loaded = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v2/recruitment/public/vacancies') &&
-        response.ok(),
-    );
-    await this.page.goto('recruitmentApply/jobs.html');
-    await loaded;
+  /**
+   * The cards render after the page loads, so before asserting a card is
+   * absent, wait for one that should be there
+   */
+  goto() {
+    return this.page.goto('recruitmentApply/jobs.html');
   }
 }

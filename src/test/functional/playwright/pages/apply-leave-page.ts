@@ -1,5 +1,6 @@
 import {expect, type Locator, type Page} from '@playwright/test';
 import {Form} from './base-ui-elements/form';
+import {toast} from './base-ui-elements/toast';
 
 /** Leave > Apply (leave/applyLeave), for the logged-in user */
 export class ApplyLeavePage extends Form {
@@ -35,16 +36,11 @@ export class ApplyLeavePage extends Form {
     }
   }
 
-  /** Apply and return the new leave request's id */
-  async apply(): Promise<number> {
-    const created = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        response.url().endsWith('/api/v2/leave/leave-requests'),
-    );
+  /** Apply and wait for the confirmation */
+  async apply() {
     await this.applyButton.click();
-    const response = await created;
-    expect(response.ok()).toBe(true);
-    return ((await response.json()) as {data: {id: number}}).data.id;
+    await expect(
+      toast(this.page, 'success', 'Successfully Saved'),
+    ).toBeVisible();
   }
 }

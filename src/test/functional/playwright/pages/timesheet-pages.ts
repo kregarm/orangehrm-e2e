@@ -46,15 +46,10 @@ export class MyTimesheetPage extends TimesheetView {
     return new EditTimesheetPage(this.page);
   }
 
-  /** Submit the timesheet for approval and wait for it to save */
+  /** Submit the timesheet for approval and wait for its status to change */
   async submit() {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        /\/api\/v2\/time\/timesheets\/\d+$/.test(response.url()),
-    );
     await this.page.getByRole('button', {name: 'Submit', exact: true}).click();
-    expect((await saved).ok()).toBe(true);
+    await expect(this.status).toHaveText('Status: Submitted');
   }
 }
 
@@ -116,19 +111,16 @@ export class EmployeeTimesheetsPage {
 
 /** An employee's timesheet, as their supervisor sees it */
 export class EmployeeTimesheetPage extends TimesheetView {
-  /** Approve or Reject, optionally with a comment, and wait for it to save */
+  /**
+   * Approve or Reject, optionally with a comment, and wait for the status
+   * to change
+   */
   async act(action: 'Approve' | 'Reject', comment?: string) {
     if (comment) {
       await this.page.getByPlaceholder('Type here ...').fill(comment);
     }
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        /\/api\/v2\/time\/employees\/\d+\/timesheets\/\d+$/.test(
-          response.url(),
-        ),
-    );
     await this.page.getByRole('button', {name: action, exact: true}).click();
-    expect((await saved).ok()).toBe(true);
+    const status = {Approve: 'Approved', Reject: 'Rejected'}[action];
+    await expect(this.status).toHaveText(`Status: ${status}`);
   }
 }

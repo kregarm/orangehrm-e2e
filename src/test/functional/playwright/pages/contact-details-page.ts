@@ -1,5 +1,6 @@
 import {expect} from '@playwright/test';
 import {Form} from './base-ui-elements/form';
+import {toast} from './base-ui-elements/toast';
 
 /** PIM / My Info > Contact Details (pim/contactDetails/empNumber/{n}) */
 export class ContactDetailsPage extends Form {
@@ -16,19 +17,15 @@ export class ContactDetailsPage extends Form {
   readonly otherEmail = this.text('Other Email');
 
   readonly saveButton = this.button('Save');
-  readonly savedToast = this.page
-    .locator('.oxd-toast--success')
-    .filter({hasText: 'Successfully Updated'});
+  readonly heading = this.page.getByRole('heading', {name: 'Contact Details'});
+  readonly savedToast = toast(this.page, 'success', 'Successfully Updated');
 
   /** Open the page and wait for the saved details to be filled in */
   async goto(empNumber: number) {
-    const loaded = this.page.waitForResponse(
-      (response) =>
-        response.url().endsWith(`/employee/${empNumber}/contact-details`) &&
-        response.ok(),
-    );
     await this.page.goto(`pim/contactDetails/empNumber/${empNumber}`);
-    await loaded;
+    // The loader shows from the first render, along with the heading
+    await expect(this.heading).toBeVisible();
+    await expect(this.loader).toBeHidden();
   }
 
   async save() {

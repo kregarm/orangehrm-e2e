@@ -1,5 +1,6 @@
 import {expect, type Locator, type Page} from '@playwright/test';
 import {Table} from './base-ui-elements/table';
+import {toast} from './base-ui-elements/toast';
 import type {LeavePeriod} from '../api/leave/LeavePeriodsApiClass';
 
 /**
@@ -17,24 +18,12 @@ export class LeaveListPage {
     this.table = new Table(page);
   }
 
-  /**
-   * Wait for the list request so an absent row is meaningful. `range`
-   * replaces the default current leave period, e.g. with the next one.
-   */
+  /** `range` replaces the default current leave period, e.g. with the next one */
   async goto(range?: LeavePeriod) {
-    const loaded = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'GET' &&
-        /\/api\/v2\/leave\/(employees\/)?leave-requests\?/.test(
-          response.url(),
-        ) &&
-        response.ok(),
-    );
     const query = range
       ? `?${new URLSearchParams({fromDate: range.startDate, toDate: range.endDate})}`
       : '';
     await this.page.goto(`${this.url}${query}`);
-    await loaded;
   }
 
   /** The row of `employee`'s request over `dates`, as the Date column shows them */
@@ -47,15 +36,12 @@ export class LeaveListPage {
     return row.getByRole('cell').nth(6);
   }
 
-  /** Click a row action (Approve, Reject, Cancel) and wait for it to save */
+  /** Click a row action (Approve, Reject, Cancel) and wait for the confirmation */
   async act(row: Locator, action: 'Approve' | 'Reject' | 'Cancel') {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        response.url().includes('/leave-requests/'),
-    );
     await row.getByRole('button', {name: action, exact: true}).click();
-    expect((await saved).ok()).toBe(true);
+    await expect(
+      toast(this.page, 'success', 'Successfully Updated'),
+    ).toBeVisible();
   }
 }
 

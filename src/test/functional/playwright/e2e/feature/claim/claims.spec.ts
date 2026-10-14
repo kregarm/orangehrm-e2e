@@ -32,19 +32,21 @@ test.describe('Claim - Claims', () => {
     const referenceId = await claimPage.referenceId.input.inputValue();
 
     // Employee adds two expenses, which add up to the total
-    await claimPage.addExpense({
+    await claimPage.expenses.add({
       type: travel.name,
       date: '2026-10-05',
       amount: '250.50',
       note: 'Train tickets',
     });
-    await claimPage.addExpense({
+    await claimPage.expenses.add({
       type: 'Accommodation',
       date: '2026-10-06',
       amount: '180.00',
     });
-    await expect(claimPage.expenses.rows).toHaveCount(2);
-    await expect(claimPage.total).toHaveText('Total Amount (Euro) : 430.50');
+    await expect(claimPage.expenses.table.rows).toHaveCount(2);
+    await expect(claimPage.expenses.total).toHaveText(
+      'Total Amount (Euro) : 430.50',
+    );
 
     // Employee submits the claim
     await claimPage.submit();
@@ -93,7 +95,7 @@ test.describe('Claim - Claims', () => {
     // Admin opens it: Submitted, with the expense's total
     const reviewClaimPage = await employeeClaimsPage.view(referenceId);
     await expect(reviewClaimPage.status.input).toHaveValue('Submitted');
-    await expect(reviewClaimPage.total).toHaveText(
+    await expect(reviewClaimPage.expenses.total).toHaveText(
       'Total Amount (Euro) : 120.00',
     );
 

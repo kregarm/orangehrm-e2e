@@ -1,6 +1,7 @@
 import {expect, type Locator, type Page} from '@playwright/test';
 import {Form} from './base-ui-elements/form';
 import {Table} from './base-ui-elements/table';
+import {toast} from './base-ui-elements/toast';
 
 /** Performance > Manage Reviews > Add (performance/saveReview) */
 export class AddReviewPage extends Form {
@@ -17,13 +18,10 @@ export class AddReviewPage extends Form {
 
   /** Create the review activated (rather than saved as inactive) */
   async activate() {
-    const created = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        response.url().endsWith('/api/v2/performance/manage/reviews'),
-    );
     await this.button('Activate').click();
-    expect((await created).ok()).toBe(true);
+    await expect(
+      toast(this.page, 'success', 'Successfully Activated'),
+    ).toBeVisible();
   }
 }
 
@@ -107,22 +105,20 @@ export class ReviewEvaluationPage {
       .locator('input, textarea');
   }
 
-  /** Complete the evaluation, confirming that it becomes read-only */
+  /**
+   * Complete the evaluation, confirming in the dialog. The page then reloads
+   * read-only, without the Complete button.
+   */
   async complete() {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        /\/api\/v2\/performance\/reviews\/\d+\/evaluation\//.test(
-          response.url(),
-        ),
-    );
-    await this.page
-      .getByRole('button', {name: 'Complete', exact: true})
-      .click();
+    const completeButton = this.page.getByRole('button', {
+      name: 'Complete',
+      exact: true,
+    });
+    await completeButton.click();
     await this.page
       .getByRole('dialog')
       .getByRole('button', {name: 'Ok', exact: true})
       .click();
-    expect((await saved).ok()).toBe(true);
+    await expect(completeButton).toBeHidden();
   }
 }

@@ -1,6 +1,7 @@
 import {type Locator, type Page} from '@playwright/test';
 import {FilterPanel} from './base-ui-elements/filter-panel';
 import {Table} from './base-ui-elements/table';
+import {toast} from './base-ui-elements/toast';
 
 export class EmployeeFilterPanel extends FilterPanel {
   readonly employeeName = this.autocomplete('Employee Name');
@@ -23,9 +24,7 @@ export class EmployeeListPage {
   constructor(readonly page: Page) {
     this.filters = new EmployeeFilterPanel(page);
     this.table = new Table(page);
-    this.noRecordsFound = page
-      .locator('.oxd-toast--info')
-      .filter({hasText: 'No Records Found'});
+    this.noRecordsFound = toast(page, 'info', 'No Records Found');
   }
 
   /** The row showing `firstName` and `lastName` in their own columns */
@@ -33,24 +32,15 @@ export class EmployeeListPage {
     return this.table.row(firstName, lastName);
   }
 
-  /** Wait for the initial list, so a later search waits for its own results */
-  async goto() {
-    const loaded = this.listLoaded();
-    await this.page.goto('pim/viewEmployeeList');
-    await loaded;
+  goto() {
+    return this.page.goto('pim/viewEmployeeList');
   }
 
-  /** Search and wait for the results, so an absent row is meaningful */
-  async search() {
-    const loaded = this.listLoaded();
-    await this.filters.searchButton.click();
-    await loaded;
-  }
-
-  private listLoaded() {
-    return this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v2/pim/employees?') && response.ok(),
-    );
+  /**
+   * Search with the filters. The rows update once the results arrive, so
+   * assert on expected rows, or on `noRecordsFound` for an empty result.
+   */
+  search() {
+    return this.filters.searchButton.click();
   }
 }

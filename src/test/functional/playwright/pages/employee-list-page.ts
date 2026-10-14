@@ -6,6 +6,8 @@ export class EmployeeFilterPanel extends FilterPanel {
   readonly employeeName = this.autocomplete('Employee Name');
   readonly employeeId = this.text('Employee Id');
   readonly jobTitle = this.select('Job Title');
+  /** Current Employees Only (default), Current and Past Employees, Past Employees Only */
+  readonly include = this.select('Include');
 
   readonly resetButton = this.button('Reset');
   readonly searchButton = this.button('Search');
@@ -28,5 +30,15 @@ export class EmployeeListPage {
 
   goto() {
     return this.page.goto('pim/viewEmployeeList');
+  }
+
+  /** Search and wait for the results, so an absent row is meaningful */
+  async search() {
+    const loaded = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v2/pim/employees?') && response.ok(),
+    );
+    await this.filters.searchButton.click();
+    await loaded;
   }
 }

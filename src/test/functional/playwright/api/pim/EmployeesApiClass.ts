@@ -75,4 +75,22 @@ export class EmployeesApiClass extends BaseApiClass {
       reportingMethodId,
     });
   }
+
+  /**
+   * Terminate `empNumber`, making them a past employee. Reasons are seeded
+   * by the installer, e.g. 6 Resigned (see /api/v2/pim/termination-reasons).
+   */
+  async terminate(
+    empNumber: number,
+    {
+      date,
+      terminationReasonId = 6,
+    }: {date: string; terminationReasonId?: number},
+  ): Promise<void> {
+    await this.post(`${EmployeesApiClass.path}/${empNumber}/terminations`, {
+      terminationReasonId,
+      date,
+      note: null,
+    });
+  }
 }

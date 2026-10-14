@@ -66,4 +66,19 @@ test.describe('Recruitment - Hiring', () => {
       employeeListPage.row(candidate.firstName, candidate.lastName),
     ).toContainText(jobTitle.title);
   });
+
+  test('rejected candidate has no further actions', async ({page, api}) => {
+    const candidate = await api.candidates.create({vacancyId: vacancy.id});
+    await api.candidates.shortlist(candidate.id);
+
+    const candidatePage = new CandidatePage(page, candidate.id);
+    await candidatePage.goto();
+    await expect(candidatePage.status).toHaveText('Status: Shortlisted');
+
+    const reject = await candidatePage.start('Reject');
+    await reject.notes.fill('Not enough experience with SQL');
+    await reject.save();
+    await expect(candidatePage.status).toHaveText('Status: Rejected');
+    await expect(candidatePage.stage.getByRole('button')).toHaveCount(0);
+  });
 });

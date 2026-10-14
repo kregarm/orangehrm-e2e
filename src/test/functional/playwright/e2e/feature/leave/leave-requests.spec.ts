@@ -140,4 +140,29 @@ test.describe('Leave - Leave requests', () => {
     const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
     await expect(myLeaveListPage.status(row)).toHaveText('Rejected (1.00)');
   });
+
+  test('employee cancels their pending leave', async ({page, api, users}) => {
+    const {leaveRequests} = api;
+    const balance = () =>
+      leaveRequests.asUser('john', () => leaveRequests.balance(annual.id));
+    const before = await balance();
+    const date = workingDay(period, 4);
+    await leaveRequests.asUser('john', () =>
+      leaveRequests.apply({leaveTypeId: annual.id, fromDate: date}),
+    );
+
+    const myLeaveListPage = new MyLeaveListPage(page);
+    await myLeaveListPage.goto();
+    const row = myLeaveListPage.row(users.john.fullName, leaveDates(date));
+    await expect(myLeaveListPage.status(row)).toHaveText(
+      'Pending Approval (1.00)',
+    );
+    await myLeaveListPage.act(row, 'Cancel');
+    await expect(myLeaveListPage.status(row)).toHaveText('Cancelled (1.00)');
+
+    expect(await balance()).toMatchObject({
+      balance: before.balance,
+      pending: before.pending,
+    });
+  });
 });

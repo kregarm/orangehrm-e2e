@@ -76,4 +76,9 @@ export class CandidatesApiClass extends BaseApiClass {
     );
     return data;
   }
+
+  /** Move a candidate from Application Initiated to Shortlisted */
+  async shortlist(id: number, note: string | null = null): Promise<void> {
+    await this.put(`${CandidatesApiClass.path}/${id}/shortlist`, {note});
+  }
 }

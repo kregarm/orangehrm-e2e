@@ -18,7 +18,8 @@ export class Form {
     this.loader = this.root.locator('.oxd-form-loader');
   }
 
-  protected group(label: string) {
+  /** The input group labelled `label`, for a field without a helper */
+  group(label: string) {
     return this.root.locator('.oxd-input-group', {
       has: this.page.locator('label', {hasText: new RegExp(`^${label}$`)}),
     });

@@ -1,10 +1,7 @@
 import {test, expect} from '../../../support/fixtures';
-import {ApplyLeavePage} from '../../../pages/apply-leave-page';
-import {
-  LeaveListPage,
-  MyLeaveListPage,
-  leaveDates,
-} from '../../../pages/leave-list-page';
+import {ApplyLeavePage} from '../../../pages/leave/apply-leave-page';
+import {LeaveListPage, leaveDates} from '../../../pages/leave/leave-list-page';
+import {MyLeaveListPage} from '../../../pages/leave/my-leave-list-page';
 import {workingDay} from '../../../data/leave';
 import type {LeavePeriod} from '../../../api/leave/LeavePeriodsApiClass';
 import type {LeaveType} from '../../../api/leave/LeaveTypesApiClass';

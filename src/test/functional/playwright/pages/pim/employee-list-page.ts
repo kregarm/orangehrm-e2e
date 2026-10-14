@@ -1,18 +1,7 @@
 import {type Locator, type Page} from '@playwright/test';
-import {FilterPanel} from './base-ui-elements/filter-panel';
-import {Table} from './base-ui-elements/table';
-import {toast} from './base-ui-elements/toast';
-
-export class EmployeeFilterPanel extends FilterPanel {
-  readonly employeeName = this.autocomplete('Employee Name');
-  readonly employeeId = this.text('Employee Id');
-  readonly jobTitle = this.select('Job Title');
-  /** Current Employees Only (default), Current and Past Employees, Past Employees Only */
-  readonly include = this.select('Include');
-
-  readonly resetButton = this.button('Reset');
-  readonly searchButton = this.button('Search');
-}
+import {Table} from '../base-ui-elements/table';
+import {toast} from '../base-ui-elements/toast';
+import {EmployeeFilterPanel} from './employee-filter-panel';
 
 /** PIM > Employee List (pim/viewEmployeeList) */
 export class EmployeeListPage {

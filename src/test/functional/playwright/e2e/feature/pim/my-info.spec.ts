@@ -1,5 +1,5 @@
 import {test, expect} from '../../../support/fixtures';
-import {ContactDetailsPage} from '../../../pages/contact-details-page';
+import {ContactDetailsPage} from '../../../pages/pim/contact-details-page';
 
 test.describe('PIM - My Info', () => {
   test.use({loginAs: 'john'});

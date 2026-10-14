@@ -1,7 +1,7 @@
 import {test, expect} from '../../../support/fixtures';
-import {AddEmployeePage} from '../../../pages/add-employee-page';
-import {EmployeeListPage} from '../../../pages/employee-list-page';
-import {LoginPage} from '../../../pages/login-page';
+import {AddEmployeePage} from '../../../pages/pim/add-employee-page';
+import {EmployeeListPage} from '../../../pages/pim/employee-list-page';
+import {LoginPage} from '../../../pages/core/login-page';
 
 test.describe('PIM - Add Employee', () => {
   test.use({loginAs: 'admin'});

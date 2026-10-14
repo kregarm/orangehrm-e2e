@@ -1,7 +1,7 @@
-import {type Locator, type Page} from '@playwright/test';
-import {TextField} from './base-ui-elements/base-ui-elements';
-import {FilterPanel} from './base-ui-elements/filter-panel';
+import {TextField} from '../base-ui-elements/base-ui-elements';
+import {FilterPanel} from '../base-ui-elements/filter-panel';
 
+/** The filters of Recruitment > Candidates */
 export class CandidatesFilterPanel extends FilterPanel {
   readonly jobTitle = this.select('Job Title');
   readonly vacancy = this.select('Vacancy');
@@ -31,27 +31,5 @@ export class CandidatesFilterPanel extends FilterPanel {
 
   reset() {
     return this.resetButton.click();
-  }
-}
-
-export class RecruitmentPage {
-  readonly filters: CandidatesFilterPanel;
-
-  readonly rows: Locator;
-
-  constructor(readonly page: Page) {
-    this.filters = new CandidatesFilterPanel(page);
-    this.rows = page.locator('.oxd-table-body .oxd-table-card');
-  }
-
-  /** The candidates-list row whose Candidate column shows `name` */
-  row(name: string) {
-    return this.rows.filter({
-      has: this.page.getByRole('cell', {name, exact: true}),
-    });
-  }
-
-  goto() {
-    return this.page.goto('recruitment/viewCandidates');
   }
 }

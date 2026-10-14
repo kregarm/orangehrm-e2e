@@ -1,6 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {SystemUsersPage} from '../../../pages/system-users-page';
-import {LoginPage} from '../../../pages/login-page';
+import {SystemUsersPage} from '../../../pages/admin/system-users-page';
+import {LoginPage} from '../../../pages/core/login-page';
 
 test.describe('Admin - System Users', () => {
   test.use({loginAs: 'admin'});

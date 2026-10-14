@@ -1,8 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {
-  EmployeeTimesheetsPage,
-  MyTimesheetPage,
-} from '../../../pages/timesheet-pages';
+import {EmployeeTimesheetsPage} from '../../../pages/time/employee-timesheets-page';
+import {MyTimesheetPage} from '../../../pages/time/my-timesheet-page';
 
 /**
  * John (ESS) logs a week on the Acme Website project and his supervisor

@@ -1,5 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {AddReviewPage, ReviewListPage} from '../../../pages/performance-pages';
+import {AddReviewPage} from '../../../pages/performance/add-review-page';
+import {ReviewListPage} from '../../../pages/performance/review-list-page';
 
 /**
  * The admin activates a review of John (QA Engineer, rated on the job

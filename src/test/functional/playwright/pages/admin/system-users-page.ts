@@ -1,5 +1,5 @@
 import {type Locator, type Page} from '@playwright/test';
-import {Table} from './base-ui-elements/table';
+import {Table} from '../base-ui-elements/table';
 import {EditSystemUserPage} from './edit-system-user-page';
 
 /** Admin > User Management > Users (admin/viewSystemUsers) */

@@ -1,6 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {CandidatePage} from '../../../pages/candidate-page';
-import {EmployeeListPage} from '../../../pages/employee-list-page';
+import {CandidatePage} from '../../../pages/recruitment/candidate-page';
+import {EmployeeListPage} from '../../../pages/pim/employee-list-page';
 import type {JobTitle} from '../../../api/admin/JobTitlesApiClass';
 import type {Vacancy} from '../../../api/recruitment/VacanciesApiClass';
 

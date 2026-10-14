@@ -1,5 +1,5 @@
 import {type Locator, type Page} from '@playwright/test';
-import {Form} from './base-ui-elements/form';
+import {CandidateActionForm} from './candidate-action-form';
 
 /** The actions the Application Stage offers, depending on the status */
 export type CandidateAction =
@@ -44,24 +44,5 @@ export class CandidatePage {
     await this.action(name).click();
     await this.page.waitForURL(/recruitment\/changeCandidateVacancyStatus/);
     return new CandidateActionForm(this.page);
-  }
-}
-
-/** The form confirming a candidate action, with notes */
-export class CandidateActionForm extends Form {
-  readonly notes = this.text('Notes');
-
-  // Schedule Interview only
-  readonly interviewTitle = this.text('Interview Title');
-  readonly interviewer = this.autocomplete('Interviewer');
-  readonly date = this.text('Date');
-  readonly time = this.text('Time');
-
-  readonly saveButton = this.button('Save');
-
-  /** Save and wait for the redirect back to the candidate */
-  async save() {
-    await this.saveButton.click();
-    await this.page.waitForURL(/recruitment\/addCandidate\/\d+$/);
   }
 }

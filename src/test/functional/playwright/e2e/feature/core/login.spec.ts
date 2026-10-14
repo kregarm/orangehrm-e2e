@@ -1,6 +1,6 @@
 import type {Page} from '@playwright/test';
 import {test, expect} from '../../../support/fixtures';
-import {LoginPage} from '../../../pages/login-page';
+import {LoginPage} from '../../../pages/core/login-page';
 import type {User} from '../../../data/users';
 
 /** Log in through the form and assert the redirect to the dashboard */

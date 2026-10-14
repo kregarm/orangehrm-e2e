@@ -1,9 +1,9 @@
 import {expect, type Locator, type Page} from '@playwright/test';
-import {Form} from './base-ui-elements/form';
+import {Form} from '../base-ui-elements/form';
 import {
   type SelectField,
   type TextField,
-} from './base-ui-elements/base-ui-elements';
+} from '../base-ui-elements/base-ui-elements';
 
 /** Admin > User Management > Users > Edit (admin/saveSystemUser/{id}) */
 export class EditSystemUserPage {

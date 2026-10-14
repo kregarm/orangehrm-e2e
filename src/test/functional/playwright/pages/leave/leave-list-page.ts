@@ -1,7 +1,7 @@
 import {expect, type Locator, type Page} from '@playwright/test';
-import {Table} from './base-ui-elements/table';
-import {toast} from './base-ui-elements/toast';
-import type {LeavePeriod} from '../api/leave/LeavePeriodsApiClass';
+import {Table} from '../base-ui-elements/table';
+import {toast} from '../base-ui-elements/toast';
+import type {LeavePeriod} from '../../api/leave/LeavePeriodsApiClass';
 
 /**
  * Leave > Leave List (leave/viewLeaveList): the leave of the employees the
@@ -42,13 +42,6 @@ export class LeaveListPage {
     await expect(
       toast(this.page, 'success', 'Successfully Updated'),
     ).toBeVisible();
-  }
-}
-
-/** Leave > My Leave (leave/viewMyLeaveList): the user's own requests */
-export class MyLeaveListPage extends LeaveListPage {
-  constructor(page: Page) {
-    super(page, 'leave/viewMyLeaveList');
   }
 }
 

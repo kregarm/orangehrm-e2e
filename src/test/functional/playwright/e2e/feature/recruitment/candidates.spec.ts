@@ -1,5 +1,5 @@
 import {test, expect} from '../../../support/fixtures';
-import {RecruitmentPage} from '../../../pages/recruitment-page';
+import {RecruitmentPage} from '../../../pages/recruitment/recruitment-page';
 import {candidates, fullName} from '../../../data/candidates';
 import type {Candidate} from '../../../api/recruitment/CandidatesApiClass';
 import type {Vacancy} from '../../../api/recruitment/VacanciesApiClass';

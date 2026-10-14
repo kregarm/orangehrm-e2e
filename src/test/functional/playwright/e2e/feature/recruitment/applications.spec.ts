@@ -1,6 +1,6 @@
 import {test, expect} from '../../../support/fixtures';
-import {ApplyVacancyPage} from '../../../pages/apply-vacancy-page';
-import {RecruitmentPage} from '../../../pages/recruitment-page';
+import {ApplyVacancyPage} from '../../../pages/recruitment/apply-vacancy-page';
+import {RecruitmentPage} from '../../../pages/recruitment/recruitment-page';
 import type {Vacancy} from '../../../api/recruitment/VacanciesApiClass';
 
 test.describe('Recruitment - Public applications', () => {

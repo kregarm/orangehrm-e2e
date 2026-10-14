@@ -1,5 +1,5 @@
 import {test, expect} from '../../../support/fixtures';
-import {LoginPage} from '../../../pages/login-page';
+import {LoginPage} from '../../../pages/core/login-page';
 
 test.describe('Core - Access control', () => {
   test.beforeAll(async ({db, api, users}) => {

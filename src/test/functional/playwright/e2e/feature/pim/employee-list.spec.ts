@@ -1,5 +1,5 @@
 import {test, expect} from '../../../support/fixtures';
-import {EmployeeListPage} from '../../../pages/employee-list-page';
+import {EmployeeListPage} from '../../../pages/pim/employee-list-page';
 
 const current = [
   {firstName: 'Alice', lastName: 'Brown', employeeId: 'E2E-0201'},

@@ -18,12 +18,7 @@ const localHosts = (process.env.E2E_LOCAL_HOSTS || '')
   .map((host) => host.trim())
   .filter(Boolean);
 
-// Guards against patching twice when loaded from both config and setup.
-const patched = Symbol.for('orangehrm.e2eLocalHosts');
-const registry = dns as typeof dns & {[patched]?: boolean};
-
-if (localHosts.length > 0 && !registry[patched]) {
-  registry[patched] = true;
+if (localHosts.length > 0) {
   const isLocal = (hostname: string) => localHosts.includes(hostname);
   // Published container ports are reliably reachable over IPv4 only, so IPv6
   // lookups (Playwright resolves both families) get no addresses.

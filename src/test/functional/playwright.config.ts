@@ -10,7 +10,6 @@ const baseURL = `${(
 export default defineConfig({
   testDir: './playwright/e2e',
   outputDir: './playwright/test-results',
-  globalSetup: require.resolve('./playwright/global-setup'),
   // Specs share one database, so run them serially like Cypress does.
   fullyParallel: false,
   workers: 1,

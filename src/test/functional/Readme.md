@@ -26,12 +26,12 @@ So you need Docker and Node, and nothing else: no PHP, MySQL, Yarn, global Playw
 
 1. Install the command-line tools (git, curl, tar): `xcode-select --install`
 2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), start it, and give it at least 4 GB of memory.
-3. Install Node.js 22, e.g. `brew install node@22`, then run `corepack enable`.
+3. Install Node.js 22, e.g. `brew install node@22`. It ships with Corepack, which the runner uses.
 
 ### Linux
 
 1. Install git, curl and tar, and [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin. Add yourself to the `docker` group so `docker` works without `sudo`.
-2. Install Node.js 22 (package manager or [nvm](https://github.com/nvm-sh/nvm)), then run `corepack enable`.
+2. Install Node.js 22 (package manager or [nvm](https://github.com/nvm-sh/nvm)). It ships with Corepack, which the runner uses.
 3. On the first run, prefix the command with `PLAYWRIGHT_INSTALL_DEPS=true` to install Chromium's system libraries (it asks for `sudo`).
 
 ### Windows
